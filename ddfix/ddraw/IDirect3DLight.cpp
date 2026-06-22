@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -29,7 +29,7 @@ m_IDirect3DLight::~m_IDirect3DLight()
 
 HRESULT m_IDirect3DLight::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DLight || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DLight || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -65,7 +65,7 @@ ULONG m_IDirect3DLight::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DLight::Initialize(LPDIRECT3D a)
+HRESULT m_IDirect3DLight::Initialize(dx6::LPDIRECT3D a)
 {
 	if (a)
 	{
@@ -75,7 +75,7 @@ HRESULT m_IDirect3DLight::Initialize(LPDIRECT3D a)
 	return ProxyInterface->Initialize(a);
 }
 
-HRESULT m_IDirect3DLight::SetLight(LPD3DLIGHT a)
+HRESULT m_IDirect3DLight::SetLight(dx6::LPD3DLIGHT a)
 {
 	if (a)
 	{
@@ -109,7 +109,7 @@ HRESULT m_IDirect3DLight::SetLight(LPD3DLIGHT a)
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DLight::GetLight(LPD3DLIGHT a)
+HRESULT m_IDirect3DLight::GetLight(dx6::LPD3DLIGHT a)
 {
 	return ProxyInterface->GetLight(a);
 }

@@ -51,7 +51,7 @@ const DDPIXELFORMAT* g_texformats = texformats;
 
 HRESULT m_IDirect3DTexture::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DTexture || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DTexture || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -87,7 +87,7 @@ ULONG m_IDirect3DTexture::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DTexture::Initialize(LPDIRECT3DDEVICE a, LPDIRECTDRAWSURFACE b)
+HRESULT m_IDirect3DTexture::Initialize(dx6::LPDIRECT3DDEVICE a, LPDIRECTDRAWSURFACE b)
 {
 	if (a)
 	{
@@ -101,7 +101,7 @@ HRESULT m_IDirect3DTexture::Initialize(LPDIRECT3DDEVICE a, LPDIRECTDRAWSURFACE b
 	return ProxyInterface->Initialize(a, b);
 }
 
-HRESULT m_IDirect3DTexture::GetHandle(LPDIRECT3DDEVICE a, LPD3DTEXTUREHANDLE b)
+HRESULT m_IDirect3DTexture::GetHandle(dx6::LPDIRECT3DDEVICE a, LPD3DTEXTUREHANDLE b)
 {
 	if (a)
 	{
@@ -116,7 +116,7 @@ HRESULT m_IDirect3DTexture::PaletteChanged(DWORD a, DWORD b)
 	return ProxyInterface->PaletteChanged(a, b);
 }
 
-HRESULT m_IDirect3DTexture::Load(LPDIRECT3DTEXTURE a)
+HRESULT m_IDirect3DTexture::Load(dx6::LPDIRECT3DTEXTURE a)
 {
 	if (a)
 	{

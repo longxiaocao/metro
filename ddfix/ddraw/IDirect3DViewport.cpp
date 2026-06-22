@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DViewport::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DViewport || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DViewport || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,7 +54,7 @@ ULONG m_IDirect3DViewport::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DViewport::Initialize(LPDIRECT3D a)
+HRESULT m_IDirect3DViewport::Initialize(dx6::LPDIRECT3D a)
 {
 	if (a)
 	{
@@ -64,22 +64,22 @@ HRESULT m_IDirect3DViewport::Initialize(LPDIRECT3D a)
 	return ProxyInterface->Initialize(a);
 }
 
-HRESULT m_IDirect3DViewport::GetViewport(LPD3DVIEWPORT a)
+HRESULT m_IDirect3DViewport::GetViewport(dx6::LPD3DVIEWPORT a)
 {
 	return ProxyInterface->GetViewport(a);
 }
 
-HRESULT m_IDirect3DViewport::SetViewport(LPD3DVIEWPORT a)
+HRESULT m_IDirect3DViewport::SetViewport(dx6::LPD3DVIEWPORT a)
 {
 	return ProxyInterface->SetViewport(a);
 }
 
-HRESULT m_IDirect3DViewport::TransformVertices(DWORD a, LPD3DTRANSFORMDATA b, DWORD c, LPDWORD d)
+HRESULT m_IDirect3DViewport::TransformVertices(DWORD a, dx6::LPD3DTRANSFORMDATA b, DWORD c, LPDWORD d)
 {
 	return ProxyInterface->TransformVertices(a, b, c, d);
 }
 
-HRESULT m_IDirect3DViewport::LightElements(DWORD a, LPD3DLIGHTDATA b)
+HRESULT m_IDirect3DViewport::LightElements(DWORD a, dx6::LPD3DLIGHTDATA b)
 {
 	return ProxyInterface->LightElements(a, b);
 }
@@ -121,7 +121,7 @@ HRESULT m_IDirect3DViewport::Clear(DWORD a, LPD3DRECT b, DWORD c)
 	return ProxyInterface->Clear(a, b, c);
 }
 
-HRESULT m_IDirect3DViewport::AddLight(LPDIRECT3DLIGHT a)
+HRESULT m_IDirect3DViewport::AddLight(dx6::LPDIRECT3DLIGHT a)
 {
 	if (a)
 	{
@@ -131,7 +131,7 @@ HRESULT m_IDirect3DViewport::AddLight(LPDIRECT3DLIGHT a)
 	return ProxyInterface->AddLight(a);
 }
 
-HRESULT m_IDirect3DViewport::DeleteLight(LPDIRECT3DLIGHT a)
+HRESULT m_IDirect3DViewport::DeleteLight(dx6::LPDIRECT3DLIGHT a)
 {
 	if (a)
 	{
@@ -141,7 +141,7 @@ HRESULT m_IDirect3DViewport::DeleteLight(LPDIRECT3DLIGHT a)
 	return ProxyInterface->DeleteLight(a);
 }
 
-HRESULT m_IDirect3DViewport::NextLight(LPDIRECT3DLIGHT a, LPDIRECT3DLIGHT * b, DWORD c)
+HRESULT m_IDirect3DViewport::NextLight(dx6::LPDIRECT3DLIGHT a, dx6::LPDIRECT3DLIGHT * b, DWORD c)
 {
 	if (a)
 	{

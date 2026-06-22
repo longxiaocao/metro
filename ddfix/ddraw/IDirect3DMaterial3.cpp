@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -29,7 +29,7 @@ void m_IDirect3DMaterial3::GetMaterial9(ND3D9::D3DMATERIAL9* mat9) const
 
 HRESULT m_IDirect3DMaterial3::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DMaterial3 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DMaterial3 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -65,7 +65,7 @@ ULONG m_IDirect3DMaterial3::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DMaterial3::SetMaterial(LPD3DMATERIAL a)
+HRESULT m_IDirect3DMaterial3::SetMaterial(dx6::LPD3DMATERIAL a)
 {
 	if (a)
 	{
@@ -80,13 +80,13 @@ HRESULT m_IDirect3DMaterial3::SetMaterial(LPD3DMATERIAL a)
 	}
 }
 
-HRESULT m_IDirect3DMaterial3::GetMaterial(LPD3DMATERIAL a)
+HRESULT m_IDirect3DMaterial3::GetMaterial(dx6::LPD3DMATERIAL a)
 {
 	*a = m_matDef;
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DMaterial3::GetHandle(LPDIRECT3DDEVICE3 a, LPD3DMATERIALHANDLE b)
+HRESULT m_IDirect3DMaterial3::GetHandle(dx6::LPDIRECT3DDEVICE3 a, LPD3DMATERIALHANDLE b)
 {
 	// 存储this指针
 	*b = (DWORD)this;

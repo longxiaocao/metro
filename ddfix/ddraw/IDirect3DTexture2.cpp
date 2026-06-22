@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -17,7 +17,7 @@
 #include "ddraw.h"
 #include "../D3D9Context.h"
 
-m_IDirect3DTexture2::m_IDirect3DTexture2(IDirect3DTexture2 *aOriginal, m_IDirectDrawSurface4 *surface)
+m_IDirect3DTexture2::m_IDirect3DTexture2(dx6::IDirect3DTexture2 *aOriginal, m_IDirectDrawSurface4 *surface)
 	: ProxyInterface(aOriginal)
 	, m_tex9Handle(0)
 	, Refs(1)
@@ -64,7 +64,7 @@ SmartPtr<ND3D9::IDirect3DTexture9> m_IDirect3DTexture2::GetTexture9() const
 
 HRESULT m_IDirect3DTexture2::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DTexture2 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DTexture2 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -100,7 +100,7 @@ ULONG m_IDirect3DTexture2::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DTexture2::GetHandle(LPDIRECT3DDEVICE2 a, LPD3DTEXTUREHANDLE b)
+HRESULT m_IDirect3DTexture2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, LPD3DTEXTUREHANDLE b)
 {
 	if (a)
 	{
@@ -115,7 +115,7 @@ HRESULT m_IDirect3DTexture2::PaletteChanged(DWORD a, DWORD b)
 	return ProxyInterface->PaletteChanged(a, b);
 }
 
-HRESULT m_IDirect3DTexture2::Load(LPDIRECT3DTEXTURE2 a)
+HRESULT m_IDirect3DTexture2::Load(dx6::LPDIRECT3DTEXTURE2 a)
 {
 	if (!a)
 	{

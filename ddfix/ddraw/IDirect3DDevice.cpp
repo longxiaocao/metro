@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DDevice::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DDevice || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DDevice || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,7 +54,7 @@ ULONG m_IDirect3DDevice::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DDevice::Initialize(LPDIRECT3D a, LPGUID b, LPD3DDEVICEDESC c)
+HRESULT m_IDirect3DDevice::Initialize(dx6::LPDIRECT3D a, LPGUID b, dx6::LPD3DDEVICEDESC c)
 {
 	if (a)
 	{
@@ -64,12 +64,12 @@ HRESULT m_IDirect3DDevice::Initialize(LPDIRECT3D a, LPGUID b, LPD3DDEVICEDESC c)
 	return ProxyInterface->Initialize(a, b, c);
 }
 
-HRESULT m_IDirect3DDevice::GetCaps(LPD3DDEVICEDESC a, LPD3DDEVICEDESC b)
+HRESULT m_IDirect3DDevice::GetCaps(dx6::LPD3DDEVICEDESC a, dx6::LPD3DDEVICEDESC b)
 {
 	return ProxyInterface->GetCaps(a, b);
 }
 
-HRESULT m_IDirect3DDevice::SwapTextureHandles(LPDIRECT3DTEXTURE a, LPDIRECT3DTEXTURE b)
+HRESULT m_IDirect3DDevice::SwapTextureHandles(dx6::LPDIRECT3DTEXTURE a, dx6::LPDIRECT3DTEXTURE b)
 {
 	if (a)
 	{
@@ -83,7 +83,7 @@ HRESULT m_IDirect3DDevice::SwapTextureHandles(LPDIRECT3DTEXTURE a, LPDIRECT3DTEX
 	return ProxyInterface->SwapTextureHandles(a, b);
 }
 
-HRESULT m_IDirect3DDevice::CreateExecuteBuffer(LPD3DEXECUTEBUFFERDESC a, LPDIRECT3DEXECUTEBUFFER * b, IUnknown * c)
+HRESULT m_IDirect3DDevice::CreateExecuteBuffer(LPD3DEXECUTEBUFFERDESC a, dx6::LPDIRECT3DEXECUTEBUFFER * b, IUnknown * c)
 {
 	HRESULT hr = ProxyInterface->CreateExecuteBuffer(a, b, c);
 
@@ -95,12 +95,12 @@ HRESULT m_IDirect3DDevice::CreateExecuteBuffer(LPD3DEXECUTEBUFFERDESC a, LPDIREC
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice::GetStats(LPD3DSTATS a)
+HRESULT m_IDirect3DDevice::GetStats(dx6::LPD3DSTATS a)
 {
 	return ProxyInterface->GetStats(a);
 }
 
-HRESULT m_IDirect3DDevice::Execute(LPDIRECT3DEXECUTEBUFFER a, LPDIRECT3DVIEWPORT b, DWORD c)
+HRESULT m_IDirect3DDevice::Execute(dx6::LPDIRECT3DEXECUTEBUFFER a, dx6::LPDIRECT3DVIEWPORT b, DWORD c)
 {
 	if (a)
 	{
@@ -114,7 +114,7 @@ HRESULT m_IDirect3DDevice::Execute(LPDIRECT3DEXECUTEBUFFER a, LPDIRECT3DVIEWPORT
 	return ProxyInterface->Execute(a, b, c);
 }
 
-HRESULT m_IDirect3DDevice::AddViewport(LPDIRECT3DVIEWPORT a)
+HRESULT m_IDirect3DDevice::AddViewport(dx6::LPDIRECT3DVIEWPORT a)
 {
 	if (a)
 	{
@@ -124,7 +124,7 @@ HRESULT m_IDirect3DDevice::AddViewport(LPDIRECT3DVIEWPORT a)
 	return ProxyInterface->AddViewport(a);
 }
 
-HRESULT m_IDirect3DDevice::DeleteViewport(LPDIRECT3DVIEWPORT a)
+HRESULT m_IDirect3DDevice::DeleteViewport(dx6::LPDIRECT3DVIEWPORT a)
 {
 	if (a)
 	{
@@ -134,7 +134,7 @@ HRESULT m_IDirect3DDevice::DeleteViewport(LPDIRECT3DVIEWPORT a)
 	return ProxyInterface->DeleteViewport(a);
 }
 
-HRESULT m_IDirect3DDevice::NextViewport(LPDIRECT3DVIEWPORT a, LPDIRECT3DVIEWPORT * b, DWORD c)
+HRESULT m_IDirect3DDevice::NextViewport(dx6::LPDIRECT3DVIEWPORT a, dx6::LPDIRECT3DVIEWPORT * b, DWORD c)
 {
 	if (a)
 	{
@@ -151,7 +151,7 @@ HRESULT m_IDirect3DDevice::NextViewport(LPDIRECT3DVIEWPORT a, LPDIRECT3DVIEWPORT
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice::Pick(LPDIRECT3DEXECUTEBUFFER a, LPDIRECT3DVIEWPORT b, DWORD c, LPD3DRECT d)
+HRESULT m_IDirect3DDevice::Pick(dx6::LPDIRECT3DEXECUTEBUFFER a, dx6::LPDIRECT3DVIEWPORT b, DWORD c, LPD3DRECT d)
 {
 	if (a)
 	{
@@ -180,12 +180,12 @@ HRESULT m_IDirect3DDevice::CreateMatrix(LPD3DMATRIXHANDLE a)
 	return ProxyInterface->CreateMatrix(a);
 }
 
-HRESULT m_IDirect3DDevice::SetMatrix(D3DMATRIXHANDLE a, const LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice::SetMatrix(D3DMATRIXHANDLE a, const dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->SetMatrix(a, b);
 }
 
-HRESULT m_IDirect3DDevice::GetMatrix(D3DMATRIXHANDLE a, LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice::GetMatrix(D3DMATRIXHANDLE a, dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->GetMatrix(a, b);
 }
@@ -205,7 +205,7 @@ HRESULT m_IDirect3DDevice::EndScene()
 	return ProxyInterface->EndScene();
 }
 
-HRESULT m_IDirect3DDevice::GetDirect3D(LPDIRECT3D * a)
+HRESULT m_IDirect3DDevice::GetDirect3D(dx6::LPDIRECT3D * a)
 {
 	HRESULT hr = ProxyInterface->GetDirect3D(a);
 

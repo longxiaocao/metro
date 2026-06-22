@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -118,9 +118,9 @@ const D3DDEVICEDESC7 d3ddesc_default =
 	0,0,0,0 //dwReserved1 through dwReserved4
 };
 
-const D3DDEVICEDESC d3ddesc3_default =
+const dx6::D3DDEVICEDESC d3ddesc3_default =
 {
-	sizeof(D3DDEVICEDESC), // dwSize
+	sizeof(dx6::D3DDEVICEDESC), // dwSize
 	D3DDD_BCLIPPING | D3DDD_COLORMODEL | D3DDD_DEVCAPS | D3DDD_DEVICERENDERBITDEPTH |
 	D3DDD_DEVICEZBUFFERBITDEPTH | D3DDD_LIGHTINGCAPS | D3DDD_LINECAPS | D3DDD_MAXBUFFERSIZE |
 	D3DDD_MAXVERTEXCOUNT | D3DDD_TRANSFORMCAPS | D3DDD_TRICAPS, // dwFlags
@@ -199,9 +199,9 @@ HRESULT m_IDirectDraw::QueryInterface(REFIID riid, LPVOID FAR * ppvObj)
 	{
 		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirectDraw4>(IID_IDirectDraw4);
 	}
-	else if (riid == IID_IDirect3D3)
+	else if (riid == dx6::IID_IDirect3D3)
 	{
-		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(IID_IDirect3D3);
+		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(dx6::IID_IDirect3D3);
 	}
 	else
 	{

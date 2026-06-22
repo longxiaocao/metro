@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DVertexBuffer7::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DVertexBuffer7 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DVertexBuffer7 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -118,7 +118,7 @@ HRESULT m_IDirect3DVertexBuffer7::Unlock()
 	return ProxyInterface->Unlock();
 }
 
-HRESULT m_IDirect3DVertexBuffer7::ProcessVertices(DWORD a, DWORD b, DWORD c, LPDIRECT3DVERTEXBUFFER7 d, DWORD e, LPDIRECT3DDEVICE7 f, DWORD g)
+HRESULT m_IDirect3DVertexBuffer7::ProcessVertices(DWORD a, DWORD b, DWORD c, dx6::LPDIRECT3DVERTEXBUFFER7 d, DWORD e, dx6::LPDIRECT3DDEVICE7 f, DWORD g)
 {
 	if (d)
 	{
@@ -132,12 +132,12 @@ HRESULT m_IDirect3DVertexBuffer7::ProcessVertices(DWORD a, DWORD b, DWORD c, LPD
 	return ProxyInterface->ProcessVertices(a, b, c, d, e, f, g);
 }
 
-HRESULT m_IDirect3DVertexBuffer7::GetVertexBufferDesc(LPD3DVERTEXBUFFERDESC a)
+HRESULT m_IDirect3DVertexBuffer7::GetVertexBufferDesc(dx6::LPD3DVERTEXBUFFERDESC a)
 {
 	return ProxyInterface->GetVertexBufferDesc(a);
 }
 
-HRESULT m_IDirect3DVertexBuffer7::Optimize(LPDIRECT3DDEVICE7 a, DWORD b)
+HRESULT m_IDirect3DVertexBuffer7::Optimize(dx6::LPDIRECT3DDEVICE7 a, DWORD b)
 {
 	if (a)
 	{
@@ -147,7 +147,7 @@ HRESULT m_IDirect3DVertexBuffer7::Optimize(LPDIRECT3DDEVICE7 a, DWORD b)
 	return ProxyInterface->Optimize(a, b);
 }
 
-HRESULT m_IDirect3DVertexBuffer7::ProcessVerticesStrided(DWORD a, DWORD b, DWORD c, LPD3DDRAWPRIMITIVESTRIDEDDATA d, DWORD e, LPDIRECT3DDEVICE7 f, DWORD g)
+HRESULT m_IDirect3DVertexBuffer7::ProcessVerticesStrided(DWORD a, DWORD b, DWORD c, dx6::LPD3DDRAWPRIMITIVESTRIDEDDATA d, DWORD e, dx6::LPDIRECT3DDEVICE7 f, DWORD g)
 {
 	if (f)
 	{

@@ -17,7 +17,7 @@
 #include "ddraw.h"
 #include "../D3D9Context.h"
 
-static void GetD3DPrimitiveCount(unsigned vertexCount, D3DPRIMITIVETYPE type, int& primitiveCount)
+static void GetD3DPrimitiveCount(unsigned vertexCount, dx6::D3DPRIMITIVETYPE type, int& primitiveCount)
 {
 	switch (type)
 	{
@@ -185,14 +185,14 @@ UINT WINAPI D3DXGetFVFVertexSize(DWORD FVF)
 	UINT i;
 	UINT numTextures = (FVF & D3DFVF_TEXCOUNT_MASK) >> D3DFVF_TEXCOUNT_SHIFT;
 
-	if (FVF & D3DFVF_NORMAL) size += sizeof(D3DVECTOR);
+	if (FVF & D3DFVF_NORMAL) size += sizeof(dx6::D3DVECTOR);
 	if (FVF & D3DFVF_DIFFUSE) size += sizeof(DWORD);
 	if (FVF & D3DFVF_SPECULAR) size += sizeof(DWORD);
 	if (FVF & D3DFVF_PSIZE) size += sizeof(DWORD);
 
 	switch (FVF & D3DFVF_POSITION_MASK)
 	{
-	case D3DFVF_XYZ:    size += sizeof(D3DVECTOR); break;
+	case D3DFVF_XYZ:    size += sizeof(dx6::D3DVECTOR); break;
 	case D3DFVF_XYZRHW: size += 4 * sizeof(FLOAT); break;
 	case D3DFVF_XYZB1:  size += 4 * sizeof(FLOAT); break;
 	case D3DFVF_XYZB2:  size += 5 * sizeof(FLOAT); break;
@@ -215,7 +215,7 @@ UINT WINAPI D3DXGetFVFVertexSize(DWORD FVF)
 m_IDirect3DDevice3::~m_IDirect3DDevice3()
 {
 	ProxyAddressLookupTable.DeleteAddress(this);
-	WrapperAddressLookupTable->DeleteWrapper(IID_IDirect3DDevice3);
+	WrapperAddressLookupTable->DeleteWrapper(dx6::IID_IDirect3DDevice3);
 	for (auto viewport : m_viewports)
 	{
 		viewport->Release();
@@ -225,7 +225,7 @@ m_IDirect3DDevice3::~m_IDirect3DDevice3()
 
 HRESULT m_IDirect3DDevice3::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DDevice3 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DDevice3 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -261,21 +261,21 @@ ULONG m_IDirect3DDevice3::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DDevice3::GetCaps(LPD3DDEVICEDESC lpD3DHWDevDesc, LPD3DDEVICEDESC lpD3DHELDevDesc)
+HRESULT m_IDirect3DDevice3::GetCaps(dx6::LPD3DDEVICEDESC lpD3DHWDevDesc, dx6::LPD3DDEVICEDESC lpD3DHELDevDesc)
 {
 	auto ddraw = WrapperAddressLookupTable->FindWrapper<m_IDirectDraw>(IID_IDirectDraw);
-	D3DDEVICEDESC desc = *ddraw->GetD3DDevice3Desc();
+	dx6::D3DDEVICEDESC desc = *ddraw->GetD3DDevice3Desc();
 	*lpD3DHWDevDesc = desc;
 	*lpD3DHELDevDesc = desc;
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DDevice3::GetStats(LPD3DSTATS a)
+HRESULT m_IDirect3DDevice3::GetStats(dx6::LPD3DSTATS a)
 {
 	return ProxyInterface->GetStats(a);
 }
 
-HRESULT m_IDirect3DDevice3::AddViewport(LPDIRECT3DVIEWPORT3 a)
+HRESULT m_IDirect3DDevice3::AddViewport(dx6::LPDIRECT3DVIEWPORT3 a)
 {
 	auto itor = std::find(m_viewports.begin(), m_viewports.end(), a);
 	if (itor != m_viewports.end())
@@ -290,7 +290,7 @@ HRESULT m_IDirect3DDevice3::AddViewport(LPDIRECT3DVIEWPORT3 a)
 	}
 }
 
-HRESULT m_IDirect3DDevice3::DeleteViewport(LPDIRECT3DVIEWPORT3 a)
+HRESULT m_IDirect3DDevice3::DeleteViewport(dx6::LPDIRECT3DVIEWPORT3 a)
 {
 	auto itor = std::find(m_viewports.begin(), m_viewports.end(), a);
 	if (itor != m_viewports.end())
@@ -305,7 +305,7 @@ HRESULT m_IDirect3DDevice3::DeleteViewport(LPDIRECT3DVIEWPORT3 a)
 	}
 }
 
-HRESULT m_IDirect3DDevice3::NextViewport(LPDIRECT3DVIEWPORT3 a, LPDIRECT3DVIEWPORT3 * b, DWORD c)
+HRESULT m_IDirect3DDevice3::NextViewport(dx6::LPDIRECT3DVIEWPORT3 a, dx6::LPDIRECT3DVIEWPORT3 * b, DWORD c)
 {
 	// make compile pass
 // 	if (a)
@@ -324,7 +324,7 @@ HRESULT m_IDirect3DDevice3::NextViewport(LPDIRECT3DVIEWPORT3 a, LPDIRECT3DVIEWPO
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DDevice3::EnumTextureFormats(LPD3DENUMPIXELFORMATSCALLBACK lpd3dEnumPixelProc, LPVOID lpArg)
+HRESULT m_IDirect3DDevice3::EnumTextureFormats(dx6::LPD3DENUMPIXELFORMATSCALLBACK lpd3dEnumPixelProc, LPVOID lpArg)
 {
 	extern int g_numtexformats;
 	extern const DDPIXELFORMAT* g_texformats;
@@ -354,20 +354,20 @@ HRESULT m_IDirect3DDevice3::EndScene()
 	return ND3D9::D3D9Context::Instance()->GetDevice()->EndScene();
 }
 
-HRESULT m_IDirect3DDevice3::GetDirect3D(LPDIRECT3D3 * a)
+HRESULT m_IDirect3DDevice3::GetDirect3D(dx6::LPDIRECT3D3 * a)
 {
-	*a = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(IID_IDirect3D3);
+	*a = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(dx6::IID_IDirect3D3);
 	return D3D_OK;
 }
 
-HRESULT m_IDirect3DDevice3::SetCurrentViewport(LPDIRECT3DVIEWPORT3 a)
+HRESULT m_IDirect3DDevice3::SetCurrentViewport(dx6::LPDIRECT3DVIEWPORT3 a)
 {
 	auto vp = static_cast<m_IDirect3DViewport3*>(a)->GetViewport9();
 	return ND3D9::D3D9Context::Instance()->GetDevice()->SetViewport(vp);
 	
 }
 
-HRESULT m_IDirect3DDevice3::GetCurrentViewport(LPDIRECT3DVIEWPORT3 * a)
+HRESULT m_IDirect3DDevice3::GetCurrentViewport(dx6::LPDIRECT3DVIEWPORT3 * a)
 {
 	// make compile pass
 // 	HRESULT hr = ProxyInterface->GetCurrentViewport(a);
@@ -394,7 +394,7 @@ HRESULT m_IDirect3DDevice3::GetRenderTarget(LPDIRECTDRAWSURFACE4 * a)
 	return D3D_OK;
 }
 
-HRESULT m_IDirect3DDevice3::Begin(D3DPRIMITIVETYPE a, DWORD b, DWORD c)
+HRESULT m_IDirect3DDevice3::Begin(dx6::D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 {
 	// Phase 2.5: 立即模式 (Begin) 不再透传到 ProxyInterface（nullptr）。
 	// 设计：把 DX6 立即模式转成 D3D9 DrawPrimitiveUP 调用。
@@ -416,8 +416,8 @@ HRESULT m_IDirect3DDevice3::Begin(D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 	m_immediateStride = D3DXGetFVFVertexSize(b);
 	if (m_immediateStride == 0)
 	{
-		// fallback：用 D3DVERTEX (30 byte) 防 0 除 / 越界
-		m_immediateStride = sizeof(D3DVERTEX);
+		// fallback：用 dx6::D3DVERTEX (30 byte) 防 0 除 / 越界
+		m_immediateStride = sizeof(dx6::D3DVERTEX);
 	}
 	m_immediateVB.clear();
 	m_immediateVB.reserve(64 * m_immediateStride); // 预留 64 顶点容量，减少 realloc
@@ -432,10 +432,10 @@ HRESULT m_IDirect3DDevice3::Begin(D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 	return D3D_OK;
 }
 
-HRESULT m_IDirect3DDevice3::BeginIndexed(D3DPRIMITIVETYPE a, DWORD b, LPVOID c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice3::BeginIndexed(dx6::D3DPRIMITIVETYPE a, DWORD b, LPVOID c, DWORD d, DWORD e)
 {
 	// Phase 2.5: 索引立即模式暂不实现。
-	// IDirect3DDevice3::BeginIndexed 是带索引的立即模式，需要同时缓存 index buffer。
+	// dx6::IDirect3DDevice3::BeginIndexed 是带索引的立即模式，需要同时缓存 index buffer。
 	// 流星蝴蝶剑不会触发该路径（DX6 游戏中也很少用），保留 nullptr ProxyInterface → 段错误的潜在风险。
 	// 临时实现：调用 Begin() 走非索引路径，Index() 暂存，End() 走 DrawIndexedPrimitiveUP。
 	// 这里先 return DDERR_GENERIC，让调用方显式知道不支持；后续按需扩展。
@@ -466,7 +466,7 @@ HRESULT m_IDirect3DDevice3::Vertex(LPVOID a)
 HRESULT m_IDirect3DDevice3::Index(WORD a)
 {
 	// Phase 2.5: 索引模式当前未启用，调用应视为 no-op（与 BeginIndexed 配套）。
-	// 调用方若在 BeginIndexed 之前调 Index，是非法时序，但 IDirect3DDevice3 文档允许这种"立即索引化"模式。
+	// 调用方若在 BeginIndexed 之前调 Index，是非法时序，但 dx6::IDirect3DDevice3 文档允许这种"立即索引化"模式。
 	// 这里返 DD_OK 不报错（DX6 文档语义是 no-op）。
 	return DD_OK;
 }
@@ -517,7 +517,7 @@ HRESULT m_IDirect3DDevice3::End(DWORD a)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::GetRenderState(D3DRENDERSTATETYPE a, LPDWORD b)
+HRESULT m_IDirect3DDevice3::GetRenderState(dx6::D3DRENDERSTATETYPE a, LPDWORD b)
 {
 	HRESULT hr = DD_OK;
 	*b = 0;
@@ -547,7 +547,7 @@ HRESULT m_IDirect3DDevice3::GetRenderState(D3DRENDERSTATETYPE a, LPDWORD b)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::SetRenderState(D3DRENDERSTATETYPE a, DWORD b)
+HRESULT m_IDirect3DDevice3::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 {
 	HRESULT hr = DD_OK;
 	switch (a)
@@ -574,7 +574,7 @@ HRESULT m_IDirect3DDevice3::SetRenderState(D3DRENDERSTATETYPE a, DWORD b)
 	case D3DRENDERSTATE_TEXTUREMAPBLEND:
 	{
 		ND3D9::D3DTEXTUREOP opD9 = ND3D9::D3DTOP_DISABLE;
-		switch ((D3DTEXTUREBLEND)b)
+		switch ((dx6::D3DTEXTUREBLEND)b)
 		{
 		case D3DTBLEND_DECAL:
 			assert(false);
@@ -620,12 +620,12 @@ HRESULT m_IDirect3DDevice3::SetRenderState(D3DRENDERSTATETYPE a, DWORD b)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::GetLightState(D3DLIGHTSTATETYPE a, LPDWORD b)
+HRESULT m_IDirect3DDevice3::GetLightState(dx6::D3DLIGHTSTATETYPE a, LPDWORD b)
 {
 	return ProxyInterface->GetLightState(a, b);
 }
 
-HRESULT m_IDirect3DDevice3::SetLightState(D3DLIGHTSTATETYPE a, DWORD b)
+HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
@@ -672,7 +672,7 @@ HRESULT m_IDirect3DDevice3::SetLightState(D3DLIGHTSTATETYPE a, DWORD b)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::SetTransform(D3DTRANSFORMSTATETYPE tsType, LPD3DMATRIX matrix)
+HRESULT m_IDirect3DDevice3::SetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
@@ -704,7 +704,7 @@ HRESULT m_IDirect3DDevice3::SetTransform(D3DTRANSFORMSTATETYPE tsType, LPD3DMATR
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::GetTransform(D3DTRANSFORMSTATETYPE tsType, LPD3DMATRIX matrix)
+HRESULT m_IDirect3DDevice3::GetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
@@ -736,7 +736,7 @@ HRESULT m_IDirect3DDevice3::GetTransform(D3DTRANSFORMSTATETYPE tsType, LPD3DMATR
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::MultiplyTransform(D3DTRANSFORMSTATETYPE tsType, LPD3DMATRIX matrix)
+HRESULT m_IDirect3DDevice3::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
@@ -768,7 +768,7 @@ HRESULT m_IDirect3DDevice3::MultiplyTransform(D3DTRANSFORMSTATETYPE tsType, LPD3
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::DrawPrimitive(D3DPRIMITIVETYPE dptPrimitiveType, DWORD dwVertexTypeDesc, LPVOID lpVertices,
+HRESULT m_IDirect3DDevice3::DrawPrimitive(dx6::D3DPRIMITIVETYPE dptPrimitiveType, DWORD dwVertexTypeDesc, LPVOID lpVertices,
 	DWORD dwVertexCount, DWORD dwFlags)
 {
 	HRESULT hr = DDERR_GENERIC;
@@ -792,7 +792,7 @@ HRESULT m_IDirect3DDevice3::DrawPrimitive(D3DPRIMITIVETYPE dptPrimitiveType, DWO
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::DrawIndexedPrimitive(D3DPRIMITIVETYPE d3dptPrimitiveType, DWORD dwVertexTypeDesc,
+HRESULT m_IDirect3DDevice3::DrawIndexedPrimitive(dx6::D3DPRIMITIVETYPE d3dptPrimitiveType, DWORD dwVertexTypeDesc,
 	LPVOID lpvVertices, DWORD dwVertexCount, LPWORD lpwIndices, DWORD dwIndexCount, DWORD dwFlags)
 {
 	HRESULT hr = DDERR_GENERIC;
@@ -820,27 +820,27 @@ HRESULT m_IDirect3DDevice3::DrawIndexedPrimitive(D3DPRIMITIVETYPE d3dptPrimitive
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::SetClipStatus(LPD3DCLIPSTATUS a)
+HRESULT m_IDirect3DDevice3::SetClipStatus(dx6::LPD3DCLIPSTATUS a)
 {
 	return ProxyInterface->SetClipStatus(a);
 }
 
-HRESULT m_IDirect3DDevice3::GetClipStatus(LPD3DCLIPSTATUS a)
+HRESULT m_IDirect3DDevice3::GetClipStatus(dx6::LPD3DCLIPSTATUS a)
 {
 	return ProxyInterface->GetClipStatus(a);
 }
 
-HRESULT m_IDirect3DDevice3::DrawPrimitiveStrided(D3DPRIMITIVETYPE a, DWORD b, LPD3DDRAWPRIMITIVESTRIDEDDATA c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice3::DrawPrimitiveStrided(dx6::D3DPRIMITIVETYPE a, DWORD b, dx6::LPD3DDRAWPRIMITIVESTRIDEDDATA c, DWORD d, DWORD e)
 {
 	return ProxyInterface->DrawPrimitiveStrided(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice3::DrawIndexedPrimitiveStrided(D3DPRIMITIVETYPE a, DWORD b, LPD3DDRAWPRIMITIVESTRIDEDDATA c, DWORD d, LPWORD e, DWORD f, DWORD g)
+HRESULT m_IDirect3DDevice3::DrawIndexedPrimitiveStrided(dx6::D3DPRIMITIVETYPE a, DWORD b, dx6::LPD3DDRAWPRIMITIVESTRIDEDDATA c, DWORD d, LPWORD e, DWORD f, DWORD g)
 {
 	return ProxyInterface->DrawIndexedPrimitiveStrided(a, b, c, d, e, f, g);
 }
 
-HRESULT m_IDirect3DDevice3::DrawPrimitiveVB(D3DPRIMITIVETYPE a, LPDIRECT3DVERTEXBUFFER b, DWORD c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice3::DrawPrimitiveVB(dx6::D3DPRIMITIVETYPE a, dx6::LPDIRECT3DVERTEXBUFFER b, DWORD c, DWORD d, DWORD e)
 {
 	if (b)
 	{
@@ -850,7 +850,7 @@ HRESULT m_IDirect3DDevice3::DrawPrimitiveVB(D3DPRIMITIVETYPE a, LPDIRECT3DVERTEX
 	return ProxyInterface->DrawPrimitiveVB(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice3::DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE a, LPDIRECT3DVERTEXBUFFER b, LPWORD c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice3::DrawIndexedPrimitiveVB(dx6::D3DPRIMITIVETYPE a, dx6::LPDIRECT3DVERTEXBUFFER b, LPWORD c, DWORD d, DWORD e)
 {
 	if (b)
 	{
@@ -860,12 +860,12 @@ HRESULT m_IDirect3DDevice3::DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE a, LPDIRECT3
 	return ProxyInterface->DrawIndexedPrimitiveVB(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice3::ComputeSphereVisibility(LPD3DVECTOR a, LPD3DVALUE b, DWORD c, DWORD d, LPDWORD e)
+HRESULT m_IDirect3DDevice3::ComputeSphereVisibility(dx6::LPD3DVECTOR a, dx6::LPD3DVALUE b, DWORD c, DWORD d, LPDWORD e)
 {
 	return ProxyInterface->ComputeSphereVisibility(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice3::GetTexture(DWORD a, LPDIRECT3DTEXTURE2 * b)
+HRESULT m_IDirect3DDevice3::GetTexture(DWORD a, dx6::LPDIRECT3DTEXTURE2 * b)
 {
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	SmartPtr<ND3D9::IDirect3DBaseTexture9> tex9;
@@ -886,7 +886,7 @@ HRESULT m_IDirect3DDevice3::GetTexture(DWORD a, LPDIRECT3DTEXTURE2 * b)
 	}
 }
 
-HRESULT m_IDirect3DDevice3::SetTexture(DWORD a, LPDIRECT3DTEXTURE2 b)
+HRESULT m_IDirect3DDevice3::SetTexture(DWORD a, dx6::LPDIRECT3DTEXTURE2 b)
 {
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	if (b)
@@ -913,7 +913,7 @@ HRESULT m_IDirect3DDevice3::SetTexture(DWORD a, LPDIRECT3DTEXTURE2 b)
 	}
 }
 
-HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, D3DTEXTURESTAGESTATETYPE dwState, DWORD* pValue)
+HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURESTAGESTATETYPE dwState, DWORD* pValue)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
@@ -972,7 +972,7 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, D3DTEXTURESTAGES
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, D3DTEXTURESTAGESTATETYPE dwState, DWORD dwValue)
+HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURESTAGESTATETYPE dwState, DWORD dwValue)
 {
 	HRESULT hr = DDERR_GENERIC;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();

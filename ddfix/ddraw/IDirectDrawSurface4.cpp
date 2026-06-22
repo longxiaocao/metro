@@ -1075,7 +1075,7 @@ HRESULT m_IDirectDrawSurface4::QueryInterface(REFIID riid, LPVOID FAR * ppvObj)
 		return S_OK;
 	}
 
-	if (riid == IID_IDirect3DTexture2)
+	if (riid == dx6::IID_IDirect3DTexture2)
 	{
 		assert(m_surfaceType == ESurfaceType::Texture);
 		m_tex2->AddRef();

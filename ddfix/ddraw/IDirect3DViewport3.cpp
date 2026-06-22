@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -37,7 +37,7 @@ m_IDirect3DViewport3::~m_IDirect3DViewport3()
 
 HRESULT m_IDirect3DViewport3::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DViewport3 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DViewport3 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -73,7 +73,7 @@ ULONG m_IDirect3DViewport3::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DViewport3::Initialize(LPDIRECT3D a)
+HRESULT m_IDirect3DViewport3::Initialize(dx6::LPDIRECT3D a)
 {
 	if (a)
 	{
@@ -83,22 +83,22 @@ HRESULT m_IDirect3DViewport3::Initialize(LPDIRECT3D a)
 	return ProxyInterface->Initialize(a);
 }
 
-HRESULT m_IDirect3DViewport3::GetViewport(LPD3DVIEWPORT a)
+HRESULT m_IDirect3DViewport3::GetViewport(dx6::LPD3DVIEWPORT a)
 {
 	return ProxyInterface->GetViewport(a);
 }
 
-HRESULT m_IDirect3DViewport3::SetViewport(LPD3DVIEWPORT a)
+HRESULT m_IDirect3DViewport3::SetViewport(dx6::LPD3DVIEWPORT a)
 {
 	return ProxyInterface->SetViewport(a);
 }
 
-HRESULT m_IDirect3DViewport3::TransformVertices(DWORD a, LPD3DTRANSFORMDATA b, DWORD c, LPDWORD d)
+HRESULT m_IDirect3DViewport3::TransformVertices(DWORD a, dx6::LPD3DTRANSFORMDATA b, DWORD c, LPDWORD d)
 {
 	return ProxyInterface->TransformVertices(a, b, c, d);
 }
 
-HRESULT m_IDirect3DViewport3::LightElements(DWORD a, LPD3DLIGHTDATA b)
+HRESULT m_IDirect3DViewport3::LightElements(DWORD a, dx6::LPD3DLIGHTDATA b)
 {
 	return ProxyInterface->LightElements(a, b);
 }
@@ -140,7 +140,7 @@ HRESULT m_IDirect3DViewport3::Clear(DWORD a, LPD3DRECT b, DWORD c)
 	return ProxyInterface->Clear(a, b, c);
 }
 
-HRESULT m_IDirect3DViewport3::AddLight(LPDIRECT3DLIGHT a)
+HRESULT m_IDirect3DViewport3::AddLight(dx6::LPDIRECT3DLIGHT a)
 {
 	if (!a)
 	{
@@ -159,7 +159,7 @@ HRESULT m_IDirect3DViewport3::AddLight(LPDIRECT3DLIGHT a)
 		light->AddRef();
 
 		ND3D9::D3DLIGHT9 light9 = *light->GetLight9();
-		auto device = WrapperAddressLookupTable->FindWrapperOnly<m_IDirect3DDevice3>(IID_IDirect3DDevice3);
+		auto device = WrapperAddressLookupTable->FindWrapperOnly<m_IDirect3DDevice3>(dx6::IID_IDirect3DDevice3);
 		auto lightAmbient = device->GetLightAmbient();
 		light9.Ambient = lightAmbient;
 		ND3D9::D3D9Context::Instance()->GetDevice()->SetLight(i, &light9);
@@ -171,7 +171,7 @@ HRESULT m_IDirect3DViewport3::AddLight(LPDIRECT3DLIGHT a)
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DViewport3::DeleteLight(LPDIRECT3DLIGHT a)
+HRESULT m_IDirect3DViewport3::DeleteLight(dx6::LPDIRECT3DLIGHT a)
 {
 	if (!a)
 	{
@@ -202,7 +202,7 @@ HRESULT m_IDirect3DViewport3::DeleteLight(LPDIRECT3DLIGHT a)
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DViewport3::NextLight(LPDIRECT3DLIGHT a, LPDIRECT3DLIGHT * b, DWORD c)
+HRESULT m_IDirect3DViewport3::NextLight(dx6::LPDIRECT3DLIGHT a, dx6::LPDIRECT3DLIGHT * b, DWORD c)
 {
 	if (a)
 	{
@@ -219,7 +219,7 @@ HRESULT m_IDirect3DViewport3::NextLight(LPDIRECT3DLIGHT a, LPDIRECT3DLIGHT * b, 
 	return hr;
 }
 
-HRESULT m_IDirect3DViewport3::GetViewport2(LPD3DVIEWPORT2 a)
+HRESULT m_IDirect3DViewport3::GetViewport2(dx6::LPD3DVIEWPORT2 a)
 {
 	if (!m_viewport9)
 	{
@@ -228,7 +228,7 @@ HRESULT m_IDirect3DViewport3::GetViewport2(LPD3DVIEWPORT2 a)
 
 	if (a)
 	{
-		D3DVIEWPORT2 viewport;
+		dx6::D3DVIEWPORT2 viewport;
 
 		viewport.dwSize = sizeof(viewport);
 		viewport.dwX = m_viewport9->X;
@@ -247,7 +247,7 @@ HRESULT m_IDirect3DViewport3::GetViewport2(LPD3DVIEWPORT2 a)
 	}
 }
 
-HRESULT m_IDirect3DViewport3::SetViewport2(LPD3DVIEWPORT2 a)
+HRESULT m_IDirect3DViewport3::SetViewport2(dx6::LPD3DVIEWPORT2 a)
 {
 	if (a)
 	{
@@ -293,7 +293,7 @@ HRESULT m_IDirect3DViewport3::GetBackgroundDepth2(LPDIRECTDRAWSURFACE4 * a, LPBO
 	return DDERR_GENERIC;
 }
 
-HRESULT m_IDirect3DViewport3::Clear2(DWORD dwCount, LPD3DRECT lpRects, DWORD dwFlags, DWORD dwColor, D3DVALUE dvZ, DWORD dwStencil)
+HRESULT m_IDirect3DViewport3::Clear2(DWORD dwCount, LPD3DRECT lpRects, DWORD dwFlags, DWORD dwColor, dx6::D3DVALUE dvZ, DWORD dwStencil)
 {
 	ND3D9::D3D9Context::Instance()->GetDevice()->Clear(dwCount, lpRects, dwFlags, dwColor, dvZ, dwStencil);
 	return DD_OK;

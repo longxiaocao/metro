@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DExecuteBuffer::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DExecuteBuffer || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DExecuteBuffer || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,7 +54,7 @@ ULONG m_IDirect3DExecuteBuffer::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DExecuteBuffer::Initialize(LPDIRECT3DDEVICE a, LPD3DEXECUTEBUFFERDESC b)
+HRESULT m_IDirect3DExecuteBuffer::Initialize(dx6::LPDIRECT3DDEVICE a, LPD3DEXECUTEBUFFERDESC b)
 {
 	if (a)
 	{

@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DMaterial2::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DMaterial2 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DMaterial2 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,17 +54,17 @@ ULONG m_IDirect3DMaterial2::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DMaterial2::SetMaterial(LPD3DMATERIAL a)
+HRESULT m_IDirect3DMaterial2::SetMaterial(dx6::LPD3DMATERIAL a)
 {
 	return ProxyInterface->SetMaterial(a);
 }
 
-HRESULT m_IDirect3DMaterial2::GetMaterial(LPD3DMATERIAL a)
+HRESULT m_IDirect3DMaterial2::GetMaterial(dx6::LPD3DMATERIAL a)
 {
 	return ProxyInterface->GetMaterial(a);
 }
 
-HRESULT m_IDirect3DMaterial2::GetHandle(LPDIRECT3DDEVICE2 a, LPD3DMATERIALHANDLE b)
+HRESULT m_IDirect3DMaterial2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, LPD3DMATERIALHANDLE b)
 {
 	if (a)
 	{

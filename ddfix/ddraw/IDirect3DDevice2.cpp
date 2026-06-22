@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3DDevice2::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3DDevice2 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3DDevice2 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,12 +54,12 @@ ULONG m_IDirect3DDevice2::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DDevice2::GetCaps(LPD3DDEVICEDESC a, LPD3DDEVICEDESC b)
+HRESULT m_IDirect3DDevice2::GetCaps(dx6::LPD3DDEVICEDESC a, dx6::LPD3DDEVICEDESC b)
 {
 	return ProxyInterface->GetCaps(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::SwapTextureHandles(LPDIRECT3DTEXTURE2 a, LPDIRECT3DTEXTURE2 b)
+HRESULT m_IDirect3DDevice2::SwapTextureHandles(dx6::LPDIRECT3DTEXTURE2 a, dx6::LPDIRECT3DTEXTURE2 b)
 {
 	if (a)
 	{
@@ -73,12 +73,12 @@ HRESULT m_IDirect3DDevice2::SwapTextureHandles(LPDIRECT3DTEXTURE2 a, LPDIRECT3DT
 	return ProxyInterface->SwapTextureHandles(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::GetStats(LPD3DSTATS a)
+HRESULT m_IDirect3DDevice2::GetStats(dx6::LPD3DSTATS a)
 {
 	return ProxyInterface->GetStats(a);
 }
 
-HRESULT m_IDirect3DDevice2::AddViewport(LPDIRECT3DVIEWPORT2 a)
+HRESULT m_IDirect3DDevice2::AddViewport(dx6::LPDIRECT3DVIEWPORT2 a)
 {
 	if (a)
 	{
@@ -88,7 +88,7 @@ HRESULT m_IDirect3DDevice2::AddViewport(LPDIRECT3DVIEWPORT2 a)
 	return ProxyInterface->AddViewport(a);
 }
 
-HRESULT m_IDirect3DDevice2::DeleteViewport(LPDIRECT3DVIEWPORT2 a)
+HRESULT m_IDirect3DDevice2::DeleteViewport(dx6::LPDIRECT3DVIEWPORT2 a)
 {
 	if (a)
 	{
@@ -98,7 +98,7 @@ HRESULT m_IDirect3DDevice2::DeleteViewport(LPDIRECT3DVIEWPORT2 a)
 	return ProxyInterface->DeleteViewport(a);
 }
 
-HRESULT m_IDirect3DDevice2::NextViewport(LPDIRECT3DVIEWPORT2 a, LPDIRECT3DVIEWPORT2 * b, DWORD c)
+HRESULT m_IDirect3DDevice2::NextViewport(dx6::LPDIRECT3DVIEWPORT2 a, dx6::LPDIRECT3DVIEWPORT2 * b, DWORD c)
 {
 	if (a)
 	{
@@ -130,7 +130,7 @@ HRESULT m_IDirect3DDevice2::EndScene()
 	return ProxyInterface->EndScene();
 }
 
-HRESULT m_IDirect3DDevice2::GetDirect3D(LPDIRECT3D2 * a)
+HRESULT m_IDirect3DDevice2::GetDirect3D(dx6::LPDIRECT3D2 * a)
 {
 	HRESULT hr = ProxyInterface->GetDirect3D(a);
 
@@ -142,7 +142,7 @@ HRESULT m_IDirect3DDevice2::GetDirect3D(LPDIRECT3D2 * a)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice2::SetCurrentViewport(LPDIRECT3DVIEWPORT2 a)
+HRESULT m_IDirect3DDevice2::SetCurrentViewport(dx6::LPDIRECT3DVIEWPORT2 a)
 {
 	if (a)
 	{
@@ -152,7 +152,7 @@ HRESULT m_IDirect3DDevice2::SetCurrentViewport(LPDIRECT3DVIEWPORT2 a)
 	return ProxyInterface->SetCurrentViewport(a);
 }
 
-HRESULT m_IDirect3DDevice2::GetCurrentViewport(LPDIRECT3DVIEWPORT2 * a)
+HRESULT m_IDirect3DDevice2::GetCurrentViewport(dx6::LPDIRECT3DVIEWPORT2 * a)
 {
 	HRESULT hr = ProxyInterface->GetCurrentViewport(a);
 
@@ -186,12 +186,12 @@ HRESULT m_IDirect3DDevice2::GetRenderTarget(LPDIRECTDRAWSURFACE * a)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice2::Begin(D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, DWORD c)
+HRESULT m_IDirect3DDevice2::Begin(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, DWORD c)
 {
 	return ProxyInterface->Begin(a, b, c);
 }
 
-HRESULT m_IDirect3DDevice2::BeginIndexed(D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice2::BeginIndexed(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
 {
 	return ProxyInterface->BeginIndexed(a, b, c, d, e);
 }
@@ -211,57 +211,57 @@ HRESULT m_IDirect3DDevice2::End(DWORD a)
 	return ProxyInterface->End(a);
 }
 
-HRESULT m_IDirect3DDevice2::GetRenderState(D3DRENDERSTATETYPE a, LPDWORD b)
+HRESULT m_IDirect3DDevice2::GetRenderState(dx6::D3DRENDERSTATETYPE a, LPDWORD b)
 {
 	return ProxyInterface->GetRenderState(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::SetRenderState(D3DRENDERSTATETYPE a, DWORD b)
+HRESULT m_IDirect3DDevice2::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 {
 	return ProxyInterface->SetRenderState(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::GetLightState(D3DLIGHTSTATETYPE a, LPDWORD b)
+HRESULT m_IDirect3DDevice2::GetLightState(dx6::D3DLIGHTSTATETYPE a, LPDWORD b)
 {
 	return ProxyInterface->GetLightState(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::SetLightState(D3DLIGHTSTATETYPE a, DWORD b)
+HRESULT m_IDirect3DDevice2::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 {
 	return ProxyInterface->SetLightState(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::SetTransform(D3DTRANSFORMSTATETYPE a, LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice2::SetTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->SetTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::GetTransform(D3DTRANSFORMSTATETYPE a, LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice2::GetTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->GetTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::MultiplyTransform(D3DTRANSFORMSTATETYPE a, LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice2::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->MultiplyTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::DrawPrimitive(D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice2::DrawPrimitive(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
 {
 	return ProxyInterface->DrawPrimitive(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice2::DrawIndexedPrimitive(D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, LPWORD e, DWORD f, DWORD g)
+HRESULT m_IDirect3DDevice2::DrawIndexedPrimitive(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, LPWORD e, DWORD f, DWORD g)
 {
 	return ProxyInterface->DrawIndexedPrimitive(a, b, c, d, e, f, g);
 }
 
-HRESULT m_IDirect3DDevice2::SetClipStatus(LPD3DCLIPSTATUS a)
+HRESULT m_IDirect3DDevice2::SetClipStatus(dx6::LPD3DCLIPSTATUS a)
 {
 	return ProxyInterface->SetClipStatus(a);
 }
 
-HRESULT m_IDirect3DDevice2::GetClipStatus(LPD3DCLIPSTATUS a)
+HRESULT m_IDirect3DDevice2::GetClipStatus(dx6::LPD3DCLIPSTATUS a)
 {
 	return ProxyInterface->GetClipStatus(a);
 }

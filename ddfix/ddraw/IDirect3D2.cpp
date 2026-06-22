@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3D2::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3D2 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3D2 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -54,12 +54,12 @@ ULONG m_IDirect3D2::Release()
 	return x;
 }
 
-HRESULT m_IDirect3D2::EnumDevices(LPD3DENUMDEVICESCALLBACK a, LPVOID b)
+HRESULT m_IDirect3D2::EnumDevices(dx6::LPD3DENUMDEVICESCALLBACK a, LPVOID b)
 {
 	return ProxyInterface->EnumDevices(a, b);
 }
 
-HRESULT m_IDirect3D2::CreateLight(LPDIRECT3DLIGHT * a, IUnknown * b)
+HRESULT m_IDirect3D2::CreateLight(dx6::LPDIRECT3DLIGHT * a, IUnknown * b)
 {
 	HRESULT hr = ProxyInterface->CreateLight(a, b);
 
@@ -71,7 +71,7 @@ HRESULT m_IDirect3D2::CreateLight(LPDIRECT3DLIGHT * a, IUnknown * b)
 	return hr;
 }
 
-HRESULT m_IDirect3D2::CreateMaterial(LPDIRECT3DMATERIAL2 * a, IUnknown * b)
+HRESULT m_IDirect3D2::CreateMaterial(dx6::LPDIRECT3DMATERIAL2 * a, IUnknown * b)
 {
 	HRESULT hr = ProxyInterface->CreateMaterial(a, b);
 
@@ -83,7 +83,7 @@ HRESULT m_IDirect3D2::CreateMaterial(LPDIRECT3DMATERIAL2 * a, IUnknown * b)
 	return hr;
 }
 
-HRESULT m_IDirect3D2::CreateViewport(LPDIRECT3DVIEWPORT2 * a, IUnknown * b)
+HRESULT m_IDirect3D2::CreateViewport(dx6::LPDIRECT3DVIEWPORT2 * a, IUnknown * b)
 {
 	HRESULT hr = ProxyInterface->CreateViewport(a, b);
 
@@ -95,12 +95,12 @@ HRESULT m_IDirect3D2::CreateViewport(LPDIRECT3DVIEWPORT2 * a, IUnknown * b)
 	return hr;
 }
 
-HRESULT m_IDirect3D2::FindDevice(LPD3DFINDDEVICESEARCH a, LPD3DFINDDEVICERESULT b)
+HRESULT m_IDirect3D2::FindDevice(dx6::LPD3DFINDDEVICESEARCH a, dx6::LPD3DFINDDEVICERESULT b)
 {
 	return ProxyInterface->FindDevice(a, b);
 }
 
-HRESULT m_IDirect3D2::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE b, LPDIRECT3DDEVICE2 * c)
+HRESULT m_IDirect3D2::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE b, dx6::LPDIRECT3DDEVICE2 * c)
 {
 	if (b)
 	{

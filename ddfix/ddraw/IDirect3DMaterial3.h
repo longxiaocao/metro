@@ -1,18 +1,18 @@
-﻿#pragma once
+#pragma once
 
 namespace ND3D9
 {
 	typedef struct _D3DMATERIAL9 D3DMATERIAL9;
 }
 
-class m_IDirect3DMaterial3 : public IDirect3DMaterial3, public AddressLookupTableObject
+class m_IDirect3DMaterial3 : public dx6::IDirect3DMaterial3, public AddressLookupTableObject
 {
 private:
-	IDirect3DMaterial3 *ProxyInterface;
+	dx6::IDirect3DMaterial3 *ProxyInterface;
 	ULONG Refs;
-	D3DMATERIAL m_matDef;
+	dx6::D3DMATERIAL m_matDef;
 public:
-	m_IDirect3DMaterial3(IDirect3DMaterial3 *aOriginal, void *temp) 
+	m_IDirect3DMaterial3(dx6::IDirect3DMaterial3 *aOriginal, void *temp) 
 		: ProxyInterface(aOriginal)
 		, Refs(1)
 		, m_matDef({0})
@@ -24,7 +24,7 @@ public:
 		ProxyAddressLookupTable.DeleteAddress(this);
 	}
 
-	IDirect3DMaterial3 *GetProxyInterface() { return ProxyInterface; }
+	dx6::IDirect3DMaterial3 *GetProxyInterface() { return ProxyInterface; }
 	void GetMaterial9(ND3D9::D3DMATERIAL9* mat9) const;
 
 	/*** IUnknown methods ***/
@@ -32,8 +32,8 @@ public:
 	STDMETHOD_(ULONG, AddRef)(THIS);
 	STDMETHOD_(ULONG, Release)(THIS);
 
-	/*** IDirect3DMaterial3 methods ***/
-	STDMETHOD(SetMaterial)(THIS_ LPD3DMATERIAL);
-	STDMETHOD(GetMaterial)(THIS_ LPD3DMATERIAL);
-	STDMETHOD(GetHandle)(THIS_ LPDIRECT3DDEVICE3, LPD3DMATERIALHANDLE);
+	/*** dx6::IDirect3DMaterial3 methods ***/
+	STDMETHOD(SetMaterial)(THIS_ dx6::LPD3DMATERIAL);
+	STDMETHOD(GetMaterial)(THIS_ dx6::LPD3DMATERIAL);
+	STDMETHOD(GetHandle)(THIS_ dx6::LPDIRECT3DDEVICE3, LPD3DMATERIALHANDLE);
 };

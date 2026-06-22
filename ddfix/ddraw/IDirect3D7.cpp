@@ -18,7 +18,7 @@
 
 HRESULT m_IDirect3D7::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
-	if ((riid == IID_IDirect3D7 || riid == IID_IUnknown) && ppvObj)
+	if ((riid == dx6::IID_IDirect3D7 || riid == IID_IUnknown) && ppvObj)
 	{
 		AddRef();
 
@@ -59,7 +59,7 @@ HRESULT m_IDirect3D7::EnumDevices(LPD3DENUMDEVICESCALLBACK7 a, LPVOID b)
 	return ProxyInterface->EnumDevices(a, b);
 }
 
-HRESULT m_IDirect3D7::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE7 b, LPDIRECT3DDEVICE7 * c)
+HRESULT m_IDirect3D7::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE7 b, dx6::LPDIRECT3DDEVICE7 * c)
 {
 	if (b)
 	{
@@ -76,7 +76,7 @@ HRESULT m_IDirect3D7::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE7 b, LPDIRECT3
 	return hr;
 }
 
-HRESULT m_IDirect3D7::CreateVertexBuffer(LPD3DVERTEXBUFFERDESC a, LPDIRECT3DVERTEXBUFFER7 * b, DWORD c)
+HRESULT m_IDirect3D7::CreateVertexBuffer(dx6::LPD3DVERTEXBUFFERDESC a, dx6::LPDIRECT3DVERTEXBUFFER7 * b, DWORD c)
 {
 	HRESULT hr = ProxyInterface->CreateVertexBuffer(a, b, c);
 
@@ -88,7 +88,7 @@ HRESULT m_IDirect3D7::CreateVertexBuffer(LPD3DVERTEXBUFFERDESC a, LPDIRECT3DVERT
 	return hr;
 }
 
-HRESULT m_IDirect3D7::EnumZBufferFormats(REFCLSID a, LPD3DENUMPIXELFORMATSCALLBACK b, LPVOID c)
+HRESULT m_IDirect3D7::EnumZBufferFormats(REFCLSID a, dx6::LPD3DENUMPIXELFORMATSCALLBACK b, LPVOID c)
 {
 	return ProxyInterface->EnumZBufferFormats(a, b, c);
 }

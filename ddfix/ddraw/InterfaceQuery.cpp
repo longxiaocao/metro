@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -30,26 +30,26 @@
 // 			*ppvObj = ProxyAddressLookupTable.FindAddress<m_ ## x>(*ppvObj); \
 // 		}
 // 
-// 	QUERYINTERFACE(IDirect3D);
-// 	QUERYINTERFACE(IDirect3D2);
-// 	QUERYINTERFACE(IDirect3D3);
-// 	QUERYINTERFACE(IDirect3D7);
-// 	QUERYINTERFACE(IDirect3DDevice);
-// 	QUERYINTERFACE(IDirect3DDevice2);
-// 	QUERYINTERFACE(IDirect3DDevice3);
-// 	QUERYINTERFACE(IDirect3DDevice7);
-// 	QUERYINTERFACE(IDirect3DExecuteBuffer);
-// 	QUERYINTERFACE(IDirect3DLight);
-// 	QUERYINTERFACE(IDirect3DMaterial);
-// 	QUERYINTERFACE(IDirect3DMaterial2);
-// 	QUERYINTERFACE(IDirect3DMaterial3);
-// 	QUERYINTERFACE(IDirect3DTexture);
-// 	QUERYINTERFACE(IDirect3DTexture2);
+// 	QUERYINTERFACE(dx6::IDirect3D);
+// 	QUERYINTERFACE(dx6::IDirect3D2);
+// 	QUERYINTERFACE(dx6::IDirect3D3);
+// 	QUERYINTERFACE(dx6::IDirect3D7);
+// 	QUERYINTERFACE(dx6::IDirect3DDevice);
+// 	QUERYINTERFACE(dx6::IDirect3DDevice2);
+// 	QUERYINTERFACE(dx6::IDirect3DDevice3);
+// 	QUERYINTERFACE(dx6::IDirect3DDevice7);
+// 	QUERYINTERFACE(dx6::IDirect3DExecuteBuffer);
+// 	QUERYINTERFACE(dx6::IDirect3DLight);
+// 	QUERYINTERFACE(dx6::IDirect3DMaterial);
+// 	QUERYINTERFACE(dx6::IDirect3DMaterial2);
+// 	QUERYINTERFACE(dx6::IDirect3DMaterial3);
+// 	QUERYINTERFACE(dx6::IDirect3DTexture);
+// 	QUERYINTERFACE(dx6::IDirect3DTexture2);
 // 	QUERYINTERFACE(IDirect3DVertexBuffer);
-// 	QUERYINTERFACE(IDirect3DVertexBuffer7);
-// 	QUERYINTERFACE(IDirect3DViewport);
-// 	QUERYINTERFACE(IDirect3DViewport2);
-// 	QUERYINTERFACE(IDirect3DViewport3);
+// 	QUERYINTERFACE(dx6::IDirect3DVertexBuffer7);
+// 	QUERYINTERFACE(dx6::IDirect3DViewport);
+// 	QUERYINTERFACE(dx6::IDirect3DViewport2);
+// 	QUERYINTERFACE(dx6::IDirect3DViewport3);
 // 	QUERYINTERFACE(IDirectDraw);
 // 	QUERYINTERFACE(IDirectDraw2);
 // 	QUERYINTERFACE(IDirectDraw3);

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <unordered_map>
 #include <memory>
 
@@ -8,13 +8,13 @@ private:
 	IDirectDraw * ProxyInterface;
 	ULONG Refs;
 	std::shared_ptr<WrapperLookupTable<void>> WrapperAddressLookupTable;
-	D3DDEVICEDESC m_d3dDesc;
+	dx6::D3DDEVICEDESC m_d3dDesc;
 public:
 	m_IDirectDraw(IDirectDraw *aOriginal, std::shared_ptr<WrapperLookupTable<void>> wrapperAddressLookupTable);
 	~m_IDirectDraw();
 
 	IDirectDraw *GetProxyInterface() { return ProxyInterface; }
-	D3DDEVICEDESC* GetD3DDevice3Desc() { return &m_d3dDesc; }
+	dx6::D3DDEVICEDESC* GetD3DDevice3Desc() { return &m_d3dDesc; }
 
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface) (THIS_ REFIID riid, LPVOID FAR * ppvObj);

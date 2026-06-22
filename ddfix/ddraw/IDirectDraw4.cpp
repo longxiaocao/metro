@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -53,9 +53,9 @@ HRESULT m_IDirectDraw4::QueryInterface(REFIID riid, LPVOID FAR * ppvObj)
 		return S_OK;
 	}
 
-	if (riid == IID_IDirect3D3)
+	if (riid == dx6::IID_IDirect3D3)
 	{
-		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(IID_IDirect3D3);
+		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirect3D3>(dx6::IID_IDirect3D3);
 	}
 	else
 	{
