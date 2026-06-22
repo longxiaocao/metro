@@ -30,7 +30,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (EXTRADXSDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ExtraDxSDK/Include)
 set (EXTRADXSDK_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ExtraDxSDK/Lib)
 
-get_filename_component(GameDir ${GameExe} DIRECTORY)
+# Phase 8.9: 加 GameExe 空值检查
+#   原 line 33 直接调用 get_filename_component(GameDir ${GameExe} DIRECTORY)
+#   当 GameExe 为空字符串时（build.yml 默认 GAME_EXE: ""），cmake 4.x 报
+#   "get_filename_component called with incorrect number of arguments"
+#   这是因为 cmake 把空字符串当作未传参处理。
+#   修复：if (GameExe) 守护，空时把 GameDir 也设为空字符串。
+if (GameExe)
+    get_filename_component(GameDir ${GameExe} DIRECTORY)
+else()
+    set(GameDir "")
+endif()
 
 # -------------------- Phase 5.3: 目标平台检测 --------------------
 # CMake 不直接暴露 "x86/x64" 字符串，但 CMAKE_SIZEOF_VOID_P 可以区分 4/8 字节。
