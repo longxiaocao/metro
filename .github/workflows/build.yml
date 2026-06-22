@@ -78,6 +78,9 @@ jobs:
           Write-Host "::notice::ExtraDxSDK/Lib: $([bool](Test-Path './ExtraDxSDK/Lib'))"
           Write-Host "::notice::ColorKey.hlsl: $([bool](Test-Path './ddfix/ddraw/ColorKey.hlsl'))"
           Write-Host "::notice::PWD: $((Get-Location).Path)"
+          Write-Host "::notice::Available Visual Studio generators:"
+          $vsGens = cmake --help 2>&1 | Select-String "Visual Studio" | ForEach-Object { $_.Line }
+          foreach ($g in $vsGens) { Write-Host "::notice::  $g" }
 
       - name: Configure CMake
         shell: pwsh
@@ -110,9 +113,9 @@ jobs:
           $cmakeExit = $proc.ExitCode
           Write-Host "::notice::CMake exit code: $cmakeExit"
           if ($cmakeExit -ne 0) {
-            # 把错误最后 30 行作为 annotation 展示
+            # 把错误最后 80 行作为 annotation 展示（保留完整 generator 列表）
             if (Test-Path build\configure.err) {
-              $errTail = Get-Content build\configure.err -Tail 30
+              $errTail = Get-Content build\configure.err -Tail 80
               foreach ($line in $errTail) { Write-Host "::error::$line" }
             } else {
               Write-Host "::error::CMake configure failed (no stderr captured)"
