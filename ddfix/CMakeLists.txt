@@ -68,11 +68,18 @@ add_library(ddfix SHARED ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW}
 # Phase 7: 增加 dxguid.lib（IID 宏定义需要）+ winmm.lib（DInput 8 升级需要）
 target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib "-SAFESEH:NO")
 
-# 可选：ddfix 静态库（Phase 5.3，BUILD_DDFIX_LIB=ON 时额外产出 ddfix-static.lib）
+# 静态库：总是构建（tests/CMakeLists.txt 链接 ddfix-static 拿 IniParser/PerfCounter 等
+#   纯 STL 实现，避免 ddfixtests 通过 ddraw/com 调用 ddfix.dll 的全部依赖）
+#   Phase 8.15: 之前用 `if (BUILD_DDFIX_LIB)` 包了，BUILD_DDFIX_LIB=OFF 时 tests link 失败
+#   （LNK2019 unresolved external NDDFIX::Config::IniParser::*）。改为无条件构建。
+add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC.h)
+target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib)
+set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
+
+# 向后兼容：BUILD_DDFIX_LIB 选项保留但变为 no-op（永远 ON）
+#   Phase 8.15: 保留宏定义以防外部脚本依赖，但不再控制构建
 if (BUILD_DDFIX_LIB)
-    add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC.h)
-    target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib)
-    set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
+    message(STATUS "BUILD_DDFIX_LIB: 始终 ON（Phase 8.15 起 ddfix-static 总是构建）")
 endif()
 
 # 可选：单元测试（Phase 6.1+）

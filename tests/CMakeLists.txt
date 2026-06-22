@@ -47,6 +47,10 @@ target_compile_definitions(ddfixtests PRIVATE
 if (WIN32)
 	# Wrapper.h / PerfCounter.h 需要 Windows COM 基础
 	target_link_libraries(ddfixtests PRIVATE
+		# Phase 8.15: link ddfix-static 拿到 IniParser/PerfCounter 等纯 STL 实现
+		#   之前 link 列表为空，ddfixtests 报 LNK2019 unresolved NDDFIX::Config::IniParser::*
+		#   ddfix-static 由 ddfix/CMakeLists.txt 无条件构建（Phase 8.15 起不依赖 BUILD_DDFIX_LIB）
+		ddfix-static
 		# 显式拉 COM 启动/卸载（initguid 用）
 		# 不需要 d3d9.lib，测试不构造 D3D9 设备
 	)
