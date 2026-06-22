@@ -2,33 +2,37 @@
 
 #define INITGUID
 
-// Phase 8.24: 解决 d3d.h 在不同 DIRECT3D_VERSION 下定义不同接口的问题。
+// Phase 8.25: 用项目内 Wine d3d.h / d3dtypes.h / d3dcaps.h 替代 Windows SDK d3d.h。
 //
-// 背景:
-//   1) d3d.h (DX6) 内部根据 DIRECT3D_VERSION 选择定义哪些接口:
+// 原因 (Phase 8.22 ~ 8.24 失败根因):
+//   1) Windows SDK 的 d3d.h 根据 DIRECT3D_VERSION 提供不同接口子集:
 //      * 0x0600 (DX6) -> IDirect3D, IDirect3D2, IDirect3D3, IDirect3DMaterial*,
 //        IDirect3DTexture*, IDirect3DDevice*, IDirect3DViewport*, IDirect3DLight,
 //        IDirect3DExecuteBuffer 等
 //      * 0x0700 (DX7) -> 在 DX6 基础上加 IDirect3D7, IDirect3DDevice7,
 //        IDirect3DVertexBuffer, IDirect3DVertexBuffer7 等
-//      * < 0x0500    -> IDirect3D, IDirect3DMaterial 等 DX5 基础接口
-//      **0x0600 不定义 IDirect3D7**; **0x0700 不定义 IDirect3D**
-//   2) 代码库需要同时使用 IDirect3D (DX5) 和 IDirect3D7 (DX7),
-//      必须在 dx6 namespace 内分两次 include d3d.h,中间 #undef 头保护。
-//   3) Phase 8.22 (单次 include, DIRECT3D_VERSION=0x0900) 失败原因:
-//      d3d.h 走 DX7+ 分支,不定义 IDirect3D (CI #28)。
-//   4) Phase 8.23 (单次 include, DIRECT3D_VERSION=0x0600) 失败原因:
-//      d3d.h 走 DX6 分支,不定义 IDirect3D7 (CI #29)。
+//      ** 0x0600 不定义 IDirect3D7; 0x0700 不定义 IDirect3D **
+//      ** 0x0600 与 0x0700 都会定义 IDirect3D 等共有接口, 重复 #include 触发 C2011 **
+//      ** 0x0600 模式 d3d.h 内部还会引用 LPD3DENUMDEVICESCALLBACK7 / LPD3DVIEWPORT7 等
+//         DX7 独有类型, 触发 C2061 **
+//   2) Windows SDK 的 d3dtypes.h 定义了与 d3d9types.h 同名 enum (D3DBLEND, D3DFILLMODE
+//      等),在同 TU 全局命名空间触发 C2011。
 //
-// 修复 (Phase 8.24):
-//   1) 先强制 DIRECT3D_VERSION=0x0900 并 #include <d3d9types.h>,让 DX9 类型
-//      在全局命名空间完整定义 (D3DMATERIAL9, D3DCOLORVALUE, D3DDEVTYPE 等)。
-//   2) 临时 DIRECT3D_VERSION=0x0600 + #include d3d.h (dx6 namespace 内):
-//      定义 IDirect3D, IDirect3D2, IDirect3D3, IDirect3DMaterial* 等 DX5/DX6 接口。
-//   3) #undef d3d.h 头保护 + 临时 DIRECT3D_VERSION=0x0700 + 再次 #include d3d.h:
-//      定义 IDirect3D7, IDirect3DDevice7, IDirect3DVertexBuffer, IDirect3DVertexBuffer7
-//      等 DX7 接口。
-//   4) 恢复 DIRECT3D_VERSION=0x0900,让后续 d3d9.h / d3dx9.h 走 DX9 分支。
+// 解决 (Phase 8.25):
+//   用 Wine 的 d3d.h / d3dtypes.h / d3dcaps.h 替代 Windows SDK 的对应头文件:
+//     a) Wine d3d.h 在同文件中**无条件**定义 DX5/DX6/DX7 所有接口
+//        (IDirect3D, IDirect3D2, IDirect3D3, IDirect3D7, IDirect3DDevice{,2,3,7},
+//        IDirect3DMaterial{,2,3}, IDirect3DTexture{,2}, IDirect3DViewport{,2,3},
+//        IDirect3DLight, IDirect3DExecuteBuffer, IDirect3DVertexBuffer{,7}),
+//        完美解决 IDirect3D + IDirect3D7 矛盾。
+//     b) Wine d3dtypes.h 不定义 enum 类型 (只 typedef struct + #define 常量),
+//        包裹到 namespace dx6 后与 d3d9types.h (全局) 不冲突。
+//     c) Wine d3dtypes.h 中 __MSABI_LONG(...) 已被替换为 ((LONG)(...)) 以适配 Windows SDK。
+//     d) Wine d3d.h 头部的 <d3dtypes.h> / <d3dcaps.h> 已改为项目内相对路径。
+//
+// 全局命名空间先 include Windows SDK d3d9types.h,确保 D3DMATERIAL9 / D3DCOLORVALUE 等
+// DX9 类型在全局定义(供 IDirect3DMaterial3 等使用)。然后在 namespace dx6 内 include
+// Wine d3dtypes.h + Wine d3d.h,把 DX5/DX6/DX7 接口隔离到 dx6。
 #if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
 #undef DIRECT3D_VERSION
 #define DIRECT3D_VERSION 0x0900
@@ -38,52 +42,29 @@
 #include <ddraw.h>
 #include <ddrawex.h>
 
-// Phase 8.19: 把 d3d.h (含 d3dtypes.h) 包裹到 dx6 命名空间,避开与 d3d9.h (含
-// d3d9types.h) 的 enum type 重定义冲突 (C2011)。
+// Phase 8.25: 在 namespace dx6 内 include 项目内 Wine d3d.h, 同时定义 DX5/DX6/DX7 接口。
 //
-// 根因：
-//   d3dtypes.h 定义了 _D3DFILLMODE / _D3DBLEND / _D3DSHADEMODE / _D3DLIGHTTYPE /
-//   _D3DTEXTUREADDRESS / _D3DCULL / _D3DCMPFUNC / _D3DSTENCILOP / _D3DFOGMODE 等
-//   枚举类型，d3d9types.h 也定义了同名同值枚举。两个头文件无法在同一个 TU 的
-//   全局命名空间共存（C2011 'enum' type redefinition）。
-//
-// 解决：
-//   把 d3d.h (DX6/7 接口 + d3dtypes.h 的所有内容) 整个放进 dx6:: 命名空间。
-//   ddraw.h / ddrawex.h 不含冲突枚举，仍在全局命名空间。
-//   d3d9.h (含 d3d9types.h) 在全局/ ND3D9:: 命名空间，不再与 dx6:: 冲突。
-//
-// 代价：所有用到 IDirect3D* / LPDIRECT3D* / D3DVERTEX / D3DMATRIX 等 DX6/7
-//       类型的代码必须加 dx6:: 前缀。d3dtypes.h 内的回调类型
-//       (LPD3DENUMDEVICESCALLBACK 等) 和 struct (D3DFINDDEVICESEARCH 等) 也
-//       全部进入 dx6::。
-//
-// Phase 8.24: 分两次 include d3d.h,中间 #undef 头保护。两次都包在 dx6
-//   namespace 内,避免枚举冲突 (C2011)。头保护名 _D3D_H_ 来自 Windows SDK
-//   d3d.h;若保护名不同,#undef 是无害的(无操作)。
-#pragma push_macro("_D3D_H_")
-#pragma push_macro("__D3D_H__")
-#pragma push_macro("_D3DH_")
-#pragma push_macro("__D3DH__")
-#undef DIRECT3D_VERSION
-#define DIRECT3D_VERSION 0x0600
+// 1) 必须先 include Wine d3dtypes.h 再 include Wine d3d.h (Wine d3d.h 内部 <wine_d3dtypes.h>
+//    路径已改为项目内文件,等价)。
+// 2) Wine d3d.h 内部还 #include <objbase.h> 提供 DECLARE_INTERFACE_ / STDMETHOD 等 COM 宏。
+// 3) Wine d3dtypes.h 内部 #include <windows.h> <float.h> <ddraw.h>,但 windows.h / ddraw.h
+//    头保护已定义,会被跳过,不会污染 namespace dx6。
+// 4) Wine d3d.h 顶部 #define COM_NO_WINDOWS_H 避免 objbase.h 重复引入 windows.h。
+// 5) Wine d3d.h 用 `__WINE_D3D_H` 头保护,与 Windows SDK d3d.h 的 `_D3D_H_` 头保护
+//    互不冲突,即使 Windows SDK d3d.h 在同 TU 内被 include 也不会跳过。
 namespace dx6 {
-#include <d3d.h>
+#include "wine_d3dtypes.h"
+#include "wine_d3dcaps.h"
+#include "wine_d3d.h"
 }
-#undef _D3D_H_
-#undef __D3D_H__
-#undef _D3DH_
-#undef __D3DH__
-#undef DIRECT3D_VERSION
-#define DIRECT3D_VERSION 0x0700
-namespace dx6 {
-#include <d3d.h>
-}
-#pragma pop_macro("_D3D_H_")
-#pragma pop_macro("__D3D_H__")
-#pragma pop_macro("_D3DH_")
-#pragma pop_macro("__D3DH__")
-#undef DIRECT3D_VERSION
-#define DIRECT3D_VERSION 0x0900
+
+// Phase 8.25.1: 补充 Wine d3dtypes.h 缺失的 DX6/7 宏。
+//
+// 缺失原因: Wine d3dtypes.h 是 D3D5/6/7 早期版本, 部分 DX6 后期引入的宏(D3DFVF_PSIZE)
+// 未定义, 但项目代码(如 IDirect3DDevice3.cpp line 191)需要使用。
+#ifndef D3DFVF_PSIZE
+#define D3DFVF_PSIZE         0x020  // 顶点包含点大小
+#endif
 
 #include "..\Common\Wrapper.h"
 #include "..\Common\Logging.h"
