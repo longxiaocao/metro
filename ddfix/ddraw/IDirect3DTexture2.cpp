@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -41,8 +41,8 @@ m_IDirect3DTexture2::m_IDirect3DTexture2(dx6::IDirect3DTexture2 *aOriginal, m_ID
 				desc.dwHeight,
 				mipmapCount == 0 ? 1 : mipmapCount,
 				mipmapCount ? 0 : 0,
-				ND3D9::D3DFMT_A8R8G8B8,
-				ND3D9::D3DPOOL_MANAGED);
+				D3DFMT_A8R8G8B8,
+				D3DPOOL_MANAGED);
 		}		
 	}
 
@@ -57,9 +57,9 @@ m_IDirect3DTexture2::~m_IDirect3DTexture2()
 	m_tex9Handle = 0;
 }
 
-SmartPtr<ND3D9::IDirect3DTexture9> m_IDirect3DTexture2::GetTexture9() const
+SmartPtr<IDirect3DTexture9> m_IDirect3DTexture2::GetTexture9() const
 {
-	return ND3D9::D3D9Context::Instance()->GetResource9<ND3D9::IDirect3DTexture9>(m_tex9Handle, nullptr);
+	return ND3D9::D3D9Context::Instance()->GetResource9<IDirect3DTexture9>(m_tex9Handle, nullptr);
 }
 
 HRESULT m_IDirect3DTexture2::QueryInterface(REFIID riid, LPVOID * ppvObj)
@@ -142,8 +142,8 @@ HRESULT m_IDirect3DTexture2::Load(dx6::LPDIRECT3DTEXTURE2 a)
 	int width = desc.dwWidth;
 	int height = desc.dwHeight;
 
-	ND3D9::D3DLOCKED_RECT srcLockedRect = { 0 };
-	ND3D9::D3DLOCKED_RECT destLockedRect = { 0 };
+	D3DLOCKED_RECT srcLockedRect = { 0 };
+	D3DLOCKED_RECT destLockedRect = { 0 };
 	if(SUCCEEDED(destTex->GetTexture9()->LockRect(0, &destLockedRect, nullptr, 0) ))
 	{
 		if (SUCCEEDED(srcTex->GetTexture9()->LockRect(0, &srcLockedRect, nullptr, D3DLOCK_READONLY)))

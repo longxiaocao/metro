@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <map>
 #include <assert.h>
 #include <string>  // Phase 8.11: IResource9Factory::GetType() 返回 std::string
@@ -23,6 +23,29 @@ typedef struct HWND__ *HWND;
 //   * 在 file scope include 之前，用 #if 守护 #define DIRECT3D_VERSION 0x0900
 //     强制覆盖 d3d.h 设的旧版本号；
 //   * **不 #undef _D3D9_H_ / D3DMATRIX_DEFINED / D3DERR_* 等保护宏**。
+// Phase 8.25.6: 用 using 声明把 d3d9 标准类型引入 ND3D9 命名空间。
+//
+// 原因 (CI #34 新错误):
+//   项目代码大量使用 `D3DADAPTER_IDENTIFIER9` / `D3DPOOL` /
+//   `D3DTEXTUREFILTERTYPE` / `D3DRENDERSTATETYPE` /
+//   `D3DPRIMITIVETYPE` / `D3DTEXTUREOP` /
+//   `D3DTRANSFORMSTATETYPE` / `D3DXMATRIX` / `D3DXCOLOR` /
+//   `D3DXCreateFontW` / `D3DXGetShaderConstantTable` 等。
+//   这些类型/枚举/函数原本假设在 ND3D9 命名空间内（项目演进过程中的历史
+//   假设），但 d3d9.h / d3d9types.h / d3dx9.h 当前是 file-scope include，
+//   实际定义在全局命名空间。CI #34 编译到这些使用点时报
+//   "error C2039: 'X': is not a member of 'ND3D9'"。
+//
+// 修复策略：
+//   1) file scope 仍保留 #include <d3dx9.h>（间接 include d3d9.h / d3d9types.h），
+//      所有 d3d9 类型/枚举/函数定义在全局命名空间；
+//   2) 在 namespace ND3D9 块内用 `using` 声明逐个把需要的 d3d9 标识符
+//      引入到 ND3D9 命名空间（using 声明不重新定义，只是别名）；
+//   3) C++11 起的 `using` 声明支持引入 enum 类型本身（不带值），对 enum 值
+//      仍需全局访问。**为兼容 DX9 API**，我们这里同时把 d3d9.h 内 IDirect3D9
+//      / IDirect3DDevice9 / LPD3DXFONT 等也 using 进来。
+//   4) **不在 namespace 内 include 头文件**（#include 不能放 namespace 块内，
+//      C++ 标准要求预处理指令在 file scope）。
 #if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
 #undef DIRECT3D_VERSION
 #define DIRECT3D_VERSION 0x0900

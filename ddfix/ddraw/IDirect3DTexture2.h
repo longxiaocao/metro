@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 namespace ND3D9
 {
@@ -19,7 +19,7 @@ public:
 	~m_IDirect3DTexture2();
 
 	dx6::IDirect3DTexture2 *GetProxyInterface() { return ProxyInterface; }
-	SmartPtr<ND3D9::IDirect3DTexture9> GetTexture9() const;
+	SmartPtr<IDirect3DTexture9> GetTexture9() const;
 
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, LPVOID * ppvObj);

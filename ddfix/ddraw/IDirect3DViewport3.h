@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <array>
 namespace ND3D9
 {
@@ -11,7 +11,7 @@ private:
 	dx6::IDirect3DViewport3 *ProxyInterface;
 	ULONG Refs;
 	std::shared_ptr<WrapperLookupTable<void>> WrapperAddressLookupTable;
-	ND3D9::D3DVIEWPORT9* m_viewport9;
+	D3DVIEWPORT9* m_viewport9;
 	std::array<dx6::IDirect3DLight*, 8> m_lights;
 public:
 	m_IDirect3DViewport3(dx6::IDirect3DViewport3 *aOriginal, std::shared_ptr<WrapperLookupTable<void>> wrapperAddressLookupTable)
@@ -26,7 +26,7 @@ public:
 	~m_IDirect3DViewport3();
 
 	dx6::IDirect3DViewport3 *GetProxyInterface() { return ProxyInterface; }
-	const ND3D9::D3DVIEWPORT9* GetViewport9() const { return m_viewport9; }
+	const D3DVIEWPORT9* GetViewport9() const { return m_viewport9; }
 
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, LPVOID * ppvObj);

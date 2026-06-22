@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -79,7 +79,7 @@ static void LineProcess(dx6::D3DCOLOR* srcLine, dx6::D3DCOLOR* destLine, int wid
 struct ISurface9Wrapper
 {
 	virtual ~ISurface9Wrapper() = default;
-	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const = 0;
+	virtual SmartPtr<IDirect3DSurface9> GetSurface9() const = 0;
 	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) = 0;
 	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) = 0;
 	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) = 0;
@@ -91,12 +91,12 @@ struct ISurface9Wrapper
 class ZBuffer9Wrapper final : public ISurface9Wrapper
 {
 public:
-	ZBuffer9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, ND3D9::D3DFORMAT format, ESurfaceType surfaceType)
+	ZBuffer9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, D3DFORMAT format, ESurfaceType surfaceType)
 		: m_d3d9Context(d3d9Context)
 		, m_surfaceType(surfaceType)
 	{
 		assert(m_surfaceType == ESurfaceType::ZBuffer);
-		m_surface9Handle = m_d3d9Context->CreateZBufferSurface9(width, height, ND3D9::D3DFMT_D16, ND3D9::D3DMULTISAMPLE_NONE, 0, FALSE);
+		m_surface9Handle = m_d3d9Context->CreateZBufferSurface9(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, FALSE);
 	}
 
 	virtual ~ZBuffer9Wrapper()
@@ -109,9 +109,9 @@ public:
 		return "ZBuffer9Wrapper";
 	}
 
-	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const override
+	virtual SmartPtr<IDirect3DSurface9> GetSurface9() const override
 	{
-		return m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_surface9Handle, nullptr);
+		return m_d3d9Context->GetResource9<IDirect3DSurface9>(m_surface9Handle, nullptr);
 	}
 
 	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
@@ -152,7 +152,7 @@ private:
 class Overlay9Wrapper final : public ISurface9Wrapper
 {
 public:
-	Overlay9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, ND3D9::D3DFORMAT format, ESurfaceType surfaceType)
+	Overlay9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, D3DFORMAT format, ESurfaceType surfaceType)
 		: m_d3d9Context(d3d9Context)
 		, m_surfaceType(surfaceType)
 	{
@@ -160,7 +160,7 @@ public:
 		// 后端用一张 RENDERTARGET texture 兜底。Overlay 在 D3D9 中没硬件对应，texture 用来满足
 		// GetSurface9() 不为 null 的最小契约；UpdateOverlay/UpdateOverlayDisplay/SetOverlayPosition 等
 		// 真实 overlay 路径仍走 ProxyInterface 透传。
-		m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, ND3D9::D3DUSAGE_RENDERTARGET, format, ND3D9::D3DPOOL_DEFAULT);
+		m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, D3DUSAGE_RENDERTARGET, format, D3DPOOL_DEFAULT);
 	}
 
 	virtual ~Overlay9Wrapper()
@@ -173,10 +173,10 @@ public:
 		return "Overlay9Wrapper";
 	}
 
-	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const override
+	virtual SmartPtr<IDirect3DSurface9> GetSurface9() const override
 	{
-		auto tex9 = m_d3d9Context->GetResource9<ND3D9::IDirect3DTexture9>(m_resource9Handle, nullptr);
-		SmartPtr<ND3D9::IDirect3DSurface9> surface9;
+		auto tex9 = m_d3d9Context->GetResource9<IDirect3DTexture9>(m_resource9Handle, nullptr);
+		SmartPtr<IDirect3DSurface9> surface9;
 		if (tex9)
 		{
 			tex9->GetSurfaceLevel(0, &surface9);
@@ -220,7 +220,7 @@ private:
 class SoftwareSurface9Wrapper final : public ISurface9Wrapper
 {
 public:
-	SoftwareSurface9Wrapper(ND3D9::D3D9Context* d3d9Context,int width, int height, ND3D9::D3DFORMAT format, ESurfaceType surfaceType)
+	SoftwareSurface9Wrapper(ND3D9::D3D9Context* d3d9Context,int width, int height, D3DFORMAT format, ESurfaceType surfaceType)
 		: m_d3d9Context(d3d9Context)
 		, m_surfaceType(surfaceType)
 		, m_srcSampled(nullptr)
@@ -229,11 +229,11 @@ public:
 	{
 		if (surfaceType == ESurfaceType::BackBuffer)
 		{
-			m_surface9Handle = m_d3d9Context->CreateOffScreenSurface9(width, height, format, ND3D9::D3DPOOL_SYSTEMMEM);
+			m_surface9Handle = m_d3d9Context->CreateOffScreenSurface9(width, height, format, D3DPOOL_SYSTEMMEM);
 		}
 		else if (surfaceType == ESurfaceType::OffScreen)
 		{
-			m_surface9Handle = m_d3d9Context->CreateOffScreenSurface9(width, height, format, ND3D9::D3DPOOL_SYSTEMMEM);
+			m_surface9Handle = m_d3d9Context->CreateOffScreenSurface9(width, height, format, D3DPOOL_SYSTEMMEM);
 		}
 		else if(surfaceType == ESurfaceType::Primary)
 		{
@@ -268,9 +268,9 @@ public:
 		return "SoftwareSurface9Wrapper";
 	}
 
-	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const override
+	virtual SmartPtr<IDirect3DSurface9> GetSurface9() const override
 	{
-		return m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_surface9Handle, nullptr);
+		return m_d3d9Context->GetResource9<IDirect3DSurface9>(m_surface9Handle, nullptr);
 	}
 
 	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
@@ -344,7 +344,7 @@ public:
 		}
 
 		{
-			ND3D9::D3DLOCKED_RECT srcLockedRect;
+			D3DLOCKED_RECT srcLockedRect;
 			if (SUCCEEDED(hr = srcSurface9->LockRect(&srcLockedRect, lpSrcRect, D3DLOCK_READONLY)))
 			{
 				int destPitch = destWidth * sizeof(dx6::D3DCOLOR);
@@ -368,7 +368,7 @@ public:
 			}
 		}
 
-		ND3D9::D3DLOCKED_RECT destLockedRect;
+		D3DLOCKED_RECT destLockedRect;
 		if (SUCCEEDED(hr = destSurface9->LockRect(&destLockedRect, lpDestRect, 0)))
 		{
 			int srcPitch = destWidth * sizeof(dx6::D3DCOLOR);
@@ -426,10 +426,10 @@ public:
 		destRect.top = destY;
 		destRect.bottom = destY + height;
 
-		ND3D9::D3DLOCKED_RECT srcLockedRect;
+		D3DLOCKED_RECT srcLockedRect;
 		if (SUCCEEDED(hr = srcSurface9->LockRect(&srcLockedRect, lpSrcRect, D3DLOCK_READONLY)))
 		{
-			ND3D9::D3DLOCKED_RECT destLockedRect;
+			D3DLOCKED_RECT destLockedRect;
 			if (SUCCEEDED(hr = destSurface9->LockRect(&destLockedRect, &destRect, 0)))
 			{
 				char* srcBits = (char*)srcLockedRect.pBits;
@@ -457,7 +457,7 @@ public:
 	{
 		HRESULT hr = DDERR_GENERIC;
 		auto surface9 = GetSurface9();
-		ND3D9::D3DLOCKED_RECT destLockedRect;
+		D3DLOCKED_RECT destLockedRect;
 
 		int destWidth = rect->right - rect->left;
 		int destHeight = rect->bottom - rect->top;
@@ -506,7 +506,7 @@ private:
 class HardwareSurface9Wrapper final : public ISurface9Wrapper
 {
 public:
-	HardwareSurface9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, ND3D9::D3DFORMAT format, ESurfaceType surfaceType, DDSURFACEDESC2* desc)
+	HardwareSurface9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, D3DFORMAT format, ESurfaceType surfaceType, DDSURFACEDESC2* desc)
 		: m_d3d9Context(d3d9Context)
 		, m_surfaceType(surfaceType)
 		, m_desc(*desc)
@@ -517,7 +517,7 @@ public:
 	{
 		if (surfaceType == ESurfaceType::BackBuffer)
 		{
-			m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, D3DUSAGE_RENDERTARGET, format, ND3D9::D3DPOOL_DEFAULT);
+			m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, D3DUSAGE_RENDERTARGET, format, D3DPOOL_DEFAULT);
 			m_isTex = true;
 			m_isRenderTarget = true;
 		}
@@ -525,13 +525,13 @@ public:
 		{
 			if (m_desc.ddsCaps.dwCaps & DDSCAPS_3DDEVICE)
 			{
-				m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, D3DUSAGE_RENDERTARGET, format, ND3D9::D3DPOOL_DEFAULT);
+				m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, D3DUSAGE_RENDERTARGET, format, D3DPOOL_DEFAULT);
 				m_isTex = true;
 				m_isRenderTarget = true;
 			}
 			else
 			{
-				m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, 0, format, ND3D9::D3DPOOL_MANAGED);
+				m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, 0, format, D3DPOOL_MANAGED);
 				m_isTex = true;
 			}
 		}
@@ -559,19 +559,19 @@ public:
 		}
 	}
 
-	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const override
+	virtual SmartPtr<IDirect3DSurface9> GetSurface9() const override
 	{
 		if (!m_resource9Handle)
 			return nullptr;
 		if (!m_isTex)
 		{
-			SmartPtr<ND3D9::IDirect3DSurface9> surface9 = m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_resource9Handle, nullptr);
+			SmartPtr<IDirect3DSurface9> surface9 = m_d3d9Context->GetResource9<IDirect3DSurface9>(m_resource9Handle, nullptr);
 			return surface9;
 		}
 		else
 		{
-			auto tex9 = m_d3d9Context->GetResource9<ND3D9::IDirect3DTexture9>(m_resource9Handle, nullptr);
-			SmartPtr<ND3D9::IDirect3DSurface9> surface9;
+			auto tex9 = m_d3d9Context->GetResource9<IDirect3DTexture9>(m_resource9Handle, nullptr);
+			SmartPtr<IDirect3DSurface9> surface9;
 			tex9->GetSurfaceLevel(0, &surface9);
 			return surface9;
 		}
@@ -615,37 +615,37 @@ public:
 		device9->SetRenderTarget(0, GetSurface9());
 
 		DWORD oldZEnableState;
-		device9->GetRenderState(ND3D9::D3DRS_ZENABLE, &oldZEnableState);
-		device9->SetRenderState(ND3D9::D3DRS_ZENABLE, FALSE);
+		device9->GetRenderState(D3DRS_ZENABLE, &oldZEnableState);
+		device9->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-		auto sprite = m_d3d9Context->GetResource9<ND3D9::ID3DXSprite>(m_spriteHandle, nullptr);
+		auto sprite = m_d3d9Context->GetResource9<ID3DXSprite>(m_spriteHandle, nullptr);
 
 		device9->BeginScene();
 		{
 			sprite->Begin(0);
 			{
 				device9->SetPixelShader(sharedPS);
-				ND3D9::D3DXCOLOR srcColorKeyF(srcColorKey ? *srcColorKey : 0);
-				ND3D9::D3DXCOLOR destColorKeyF(destColorKey ? *destColorKey : 0);
+				D3DXCOLOR srcColorKeyF(srcColorKey ? *srcColorKey : 0);
+				D3DXCOLOR destColorKeyF(destColorKey ? *destColorKey : 0);
 				BOOL haveColorKey[2] = { (bool)srcColorKey, (bool)destColorKey };
 				BOOL checkAlpha = m_surfaceType == ESurfaceType::Primary;
 
-				sharedCT->SetVector((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "srcColorKey"), &ND3D9::D3DXVECTOR4(srcColorKeyF));
+				sharedCT->SetVector((IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "srcColorKey"), &D3DXVECTOR4(srcColorKeyF));
 				// Phase 2.4: 取消注释，让 DDBLT_KEYDEST 真正把 destColorKey 传入 HLSL 常量。
 				// ColorKey.hlsl 中 destColorKey 暂未在 ps_main 里直接引用（pre-existing 状态），
 				// 但 HLSL 端已声明 float4 destColorKey 常量，保留 SetFloatArray 以备后续 dest-color-key 逻辑扩展。
-				sharedCT->SetFloatArray((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "destColorKey"), (float*)&destColorKeyF, 1);
-				sharedCT->SetBoolArray((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "haveColorKey"), haveColorKey, 2);
-				sharedCT->SetBool((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "checkAlpha"), checkAlpha);
+				sharedCT->SetFloatArray((IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "destColorKey"), (float*)&destColorKeyF, 1);
+				sharedCT->SetBoolArray((IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "haveColorKey"), haveColorKey, 2);
+				sharedCT->SetBool((IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "checkAlpha"), checkAlpha);
 
-				device9->SetSamplerState(0, ND3D9::D3DSAMP_MAGFILTER, ND3D9::D3DTEXF_POINT);
-				device9->SetSamplerState(0, ND3D9::D3DSAMP_MINFILTER, ND3D9::D3DTEXF_POINT);
-				device9->SetSamplerState(0, ND3D9::D3DSAMP_MIPFILTER, ND3D9::D3DTEXF_POINT);
+				device9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+				device9->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+				device9->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT);
 
-				ND3D9::D3DXMATRIX matx;
-				ND3D9::D3DXMatrixTransformation2D(&matx, NULL, 0.0f, &ND3D9::D3DXVECTOR2(widthScale, heightScale), NULL, 0.0f, &ND3D9::D3DXVECTOR2(lpDestRect->left, lpDestRect->top));
+				D3DXMATRIX matx;
+				D3DXMatrixTransformation2D(&matx, NULL, 0.0f, &D3DXVECTOR2(widthScale, heightScale), NULL, 0.0f, &D3DXVECTOR2(lpDestRect->left, lpDestRect->top));
 				sprite->SetTransform(&matx);
-				sprite->Draw((ND3D9::IDirect3DTexture9*)*&srcTex9, lpSrcRect, NULL, NULL, 0xffffffff);
+				sprite->Draw((IDirect3DTexture9*)*&srcTex9, lpSrcRect, NULL, NULL, 0xffffffff);
 
 				sprite->Flush();
 				sprite->End();
@@ -658,7 +658,7 @@ public:
 
 		device9->SetRenderTarget(0, oldRenderTarget);
 
-		device9->SetRenderState(ND3D9::D3DRS_ZENABLE, oldZEnableState);
+		device9->SetRenderState(D3DRS_ZENABLE, oldZEnableState);
 	}
 
 	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
@@ -695,7 +695,7 @@ public:
 		{
 			return DDERR_GENERIC;
 			// too slow !!!
-			//return  m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_d3d9Context->GetBackBuffer9(), nullptr)->GetDC(a);
+			//return  m_d3d9Context->GetResource9<IDirect3DSurface9>(m_d3d9Context->GetBackBuffer9(), nullptr)->GetDC(a);
 		}
 		else
 		{
@@ -710,7 +710,7 @@ public:
 		{
 			return DDERR_GENERIC;
 			// too slow !!!
-			//return  m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_d3d9Context->GetBackBuffer9(), nullptr)->ReleaseDC(a);
+			//return  m_d3d9Context->GetResource9<IDirect3DSurface9>(m_d3d9Context->GetBackBuffer9(), nullptr)->ReleaseDC(a);
 		}
 		else
 		{
@@ -724,16 +724,16 @@ public:
 	}
 
 private:
-	SmartPtr<ND3D9::IDirect3DTexture9> GetTexture9() const
+	SmartPtr<IDirect3DTexture9> GetTexture9() const
 	{
-		return m_d3d9Context->GetResource9<ND3D9::IDirect3DTexture9>(m_resource9Handle, nullptr);
+		return m_d3d9Context->GetResource9<IDirect3DTexture9>(m_resource9Handle, nullptr);
 	}
 
 	HRESULT FillColorLockableSurface(LPRECT rect, dx6::D3DCOLOR color)
 	{
 		HRESULT hr = DDERR_GENERIC;
 		auto surface9 = GetSurface9();
-		ND3D9::D3DLOCKED_RECT destLockedRect;
+		D3DLOCKED_RECT destLockedRect;
 
 		int destWidth = rect->right - rect->left;
 		int destHeight = rect->bottom - rect->top;
@@ -761,7 +761,7 @@ private:
 	HRESULT FillColorForRenderTarget(LPRECT rect, dx6::D3DCOLOR color)
 	{
 		auto surface9 = GetSurface9();
-		SmartPtr<ND3D9::IDirect3DSurface9> oldRenderTarget;
+		SmartPtr<IDirect3DSurface9> oldRenderTarget;
 		m_d3d9Context->GetDevice()->GetRenderTarget(0, &oldRenderTarget);
 
 		m_d3d9Context->GetDevice()->SetRenderTarget(0, surface9);
@@ -856,11 +856,11 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		createInSysMem = true;
 		if (USE_SOFTWARE_WRAPPER_9)
 		{
-			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType);
 		}
 		else
 		{
-			m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+			m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
 		}
 		break;
 	}
@@ -883,11 +883,11 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 						m_desc.ddsCaps.dwCaps |= DDSCAPS_FRONTBUFFER;
 					if (USE_SOFTWARE_WRAPPER_9)
 					{
-						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType);
 					}
 					else
 					{
-						m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+						m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
 					}
 
 					{
@@ -905,11 +905,11 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 					m_surfaceType = ESurfaceType::BackBuffer;
 					if (USE_SOFTWARE_WRAPPER_9)
 					{
-						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType);
 					}
 					else
 					{
-						m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+						m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
 					}
 				}
 				else
@@ -922,11 +922,11 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		{
 			if (USE_SOFTWARE_WRAPPER_9)
 			{
-				m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+				m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType);
 			}
 			else
 			{
-				m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+				m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
 			}
 		}
 		break;
@@ -953,7 +953,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 				DDSURFACEDESC2 newDesc = desc;
 				newDesc.ddsCaps.dwCaps2 |= DDSCAPS2_MIPMAPSUBLEVEL;
 
-				ND3D9::D3DSURFACE_DESC desc9;
+				D3DSURFACE_DESC desc9;
 				m_tex2->GetTexture9()->GetLevelDesc(mipmapIndex, &desc9);
 				newDesc.dwWidth = desc9.Width;
 				newDesc.dwHeight = desc9.Height;
@@ -983,7 +983,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 			ND3D9::D3D9Context::Instance(),
 			m_desc.dwWidth,
 			m_desc.dwHeight,
-			ND3D9::D3DFMT_A8R8G8B8,
+			D3DFMT_A8R8G8B8,
 			m_surfaceType);
 		break;
 	}
@@ -998,11 +998,11 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		m_desc.dwHeight = height;
 		if (USE_SOFTWARE_WRAPPER_9)
 		{
-			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType);
 		}
 		else
 		{
-			m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+			m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
 			// HardwareSurface9Wrapper 构造里已经为 BackBuffer 设置 m_isRenderTarget = true、m_isTex = true。
 		}
 		break;
@@ -1014,7 +1014,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		ND3D9::D3D9Context::Instance()->GetBackBufferSize(&width, &height);
 		m_desc.dwWidth = width;
 		m_desc.dwHeight = height;
-		m_surface9Wrapper = new ZBuffer9Wrapper(ND3D9::D3D9Context::Instance(), width, height, ND3D9::D3DFMT_D16, m_surfaceType);
+		m_surface9Wrapper = new ZBuffer9Wrapper(ND3D9::D3D9Context::Instance(), width, height, D3DFMT_D16, m_surfaceType);
 		break;
 	}
 	default:
@@ -1059,7 +1059,7 @@ m_IDirectDrawSurface4::~m_IDirectDrawSurface4()
 	}
 }
 
-SmartPtr<ND3D9::IDirect3DSurface9> m_IDirectDrawSurface4::GetSurface9() const
+SmartPtr<IDirect3DSurface9> m_IDirectDrawSurface4::GetSurface9() const
 {
 	return m_surface9Wrapper->GetSurface9();
 }
@@ -1152,8 +1152,8 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 
 	m_IDirectDrawSurface4* srcSurface = static_cast<m_IDirectDrawSurface4*>(lpDDSrcSurface);
 	m_IDirectDrawSurface4* destSurface = this;
-	SmartPtr<ND3D9::IDirect3DSurface9> srcSurface9;
-	SmartPtr<ND3D9::IDirect3DSurface9> destSurface9;
+	SmartPtr<IDirect3DSurface9> srcSurface9;
+	SmartPtr<IDirect3DSurface9> destSurface9;
 
 	int destWidth = lpDestRect ? (lpDestRect->right - lpDestRect->left) : destSurface->m_desc.dwWidth;
 	int destHeight = lpDestRect ? (lpDestRect->bottom - lpDestRect->top) : destSurface->m_desc.dwHeight;
@@ -1271,21 +1271,21 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 	// alpha 状态会在 ColorKey 之外再叠加一层 blend。fallback 走默认 One/One 也比直接 assert 崩好。
 	if ((dwFlags & DDBLT_ALPHASRC) && (dwFlags & DDBLT_ALPHADEST))
 	{
-		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
-		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_SRCALPHA);
-		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVSRCALPHA);
+		device9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		device9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	}
 	else if (dwFlags & DDBLT_ALPHASRC)
 	{
-		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
-		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_SRCALPHA);
-		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVSRCALPHA);
+		device9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		device9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	}
 	else if (dwFlags & DDBLT_ALPHADEST)
 	{
-		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
-		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_DESTALPHA);
-		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVDESTALPHA);
+		device9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTALPHA);
+		device9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVDESTALPHA);
 	}
 
 	m_surface9Wrapper->Blt(srcSurface->m_surface9Wrapper, &srcRectOverride, &destRectOverride, srcColorKey, destColorKey);
@@ -1638,7 +1638,7 @@ HRESULT m_IDirectDrawSurface4::Lock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurf
 		}
 		else
 		{
-			ND3D9::D3DLOCKED_RECT lockedRect = { 0 };
+			D3DLOCKED_RECT lockedRect = { 0 };
 			if (SUCCEEDED(GetSurface9()->LockRect(&lockedRect, lpDestRect, lockFlags)))
 			{
 				*lpDDSurfaceDesc = m_desc;
@@ -1654,9 +1654,9 @@ HRESULT m_IDirectDrawSurface4::Lock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurf
 	}
 	else if (m_surfaceType == ESurfaceType::Texture)
 	{
-		ND3D9::D3DLOCKED_RECT lockedRect = { 0 };
+		D3DLOCKED_RECT lockedRect = { 0 };
 		int level = 0;
-		SmartPtr<ND3D9::IDirect3DTexture9> tex9;
+		SmartPtr<IDirect3DTexture9> tex9;
 		if (m_desc.ddsCaps.dwCaps & DDSCAPS_MIPMAP)
 		{
 			if (m_desc.ddsCaps.dwCaps2 & DDSCAPS2_MIPMAPSUBLEVEL)
@@ -1702,7 +1702,7 @@ HRESULT m_IDirectDrawSurface4::Lock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurf
 		else
 		{
 
-			ND3D9::D3DLOCKED_RECT lockedRect = { 0 };
+			D3DLOCKED_RECT lockedRect = { 0 };
 			if (SUCCEEDED(GetSurface9()->LockRect(&lockedRect, lpDestRect, lockFlags)))
 			{
 				*lpDDSurfaceDesc = m_desc;
@@ -1756,7 +1756,7 @@ HRESULT m_IDirectDrawSurface4::Restore()
 		// 默认 true = 保持原"trick for game meteor blade"行为
 		if (NDDFIX::Config::ConfigManager::Instance()->GetRender().zBufferAutoRestore)
 		{
-			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_ZENABLE, TRUE);
+			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(D3DRS_ZENABLE, TRUE);
 		}
 		return DD_OK;
 	}
@@ -1865,7 +1865,7 @@ HRESULT m_IDirectDrawSurface4::Unlock(LPRECT a)
 	else if (m_surfaceType == ESurfaceType::Texture)
 	{
 		int level = 0;
-		SmartPtr<ND3D9::IDirect3DTexture9> tex9 = nullptr;
+		SmartPtr<IDirect3DTexture9> tex9 = nullptr;
 		if (m_desc.ddsCaps.dwCaps & DDSCAPS_MIPMAP)
 		{
 			if (m_desc.ddsCaps.dwCaps2 & DDSCAPS2_MIPMAPSUBLEVEL)

@@ -39,7 +39,7 @@ public:
 	~m_IDirectDrawSurface4();
 
 	IDirectDrawSurface4 *GetProxyInterface() { return ProxyInterface; }
-	SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const;
+	SmartPtr<IDirect3DSurface9> GetSurface9() const;
 	m_IDirect3DTexture2* GetTexture2() const { return m_tex2; }
 
 	/*** IUnknown methods ***/

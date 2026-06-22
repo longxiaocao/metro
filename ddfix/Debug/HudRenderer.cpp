@@ -1,4 +1,4 @@
-// Phase 4.2: HudRenderer 实现
+﻿// Phase 4.2: HudRenderer 实现
 //   - ID3DXFont 画文本（来自 ExtraDxSDK/d3dx9.h）
 //   - IDirect3DDevice9::DrawPrimitiveUP 画半透明矩形（D3DFVF_XYZRHW | D3DFVF_DIFFUSE）
 //   - 设备丢失 / D3DXFont 失效 → Render() 静默 no-op
@@ -51,7 +51,7 @@ void HudRenderer::Initialize()
 	}
 
 	// D3DXCreateFontW：宽 0 = 默认；height=14 像素，中文 Win10 通常够用
-	HRESULT hr = ND3D9::D3DXCreateFontW(
+	HRESULT hr = D3DXCreateFontW(
 		m_device,
 		14,                // Height (pixels)
 		0,                 // Width (0 = default)

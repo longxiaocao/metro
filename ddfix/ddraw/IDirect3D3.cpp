@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -76,7 +76,7 @@ HRESULT m_IDirect3D3::EnumDevices(dx6::LPD3DENUMDEVICESCALLBACK lpEnumDevicesCal
 	UINT adapterCount = ND3D9::D3D9Context::Instance()->GetD3D9()->GetAdapterCount();
 	for (UINT i = 0; i < adapterCount; i++)
 	{
-		ND3D9::D3DADAPTER_IDENTIFIER9 identifier;
+		D3DADAPTER_IDENTIFIER9 identifier;
 		if (SUCCEEDED(ND3D9::D3D9Context::Instance()->GetD3D9()->GetAdapterIdentifier(i, 0, &identifier)))
 		{
 			auto guid = identifier.DeviceIdentifier;
@@ -125,7 +125,9 @@ HRESULT m_IDirect3D3::FindDevice(dx6::LPD3DFINDDEVICESEARCH a, dx6::LPD3DFINDDEV
 
 	m_IDirectDraw* ddraw = WrapperAddressLookupTable->FindWrapper<m_IDirectDraw>(IID_IDirectDraw);
 	dx6::D3DDEVICEDESC desc = *ddraw->GetD3DDevice3Desc();
-	b->ddDeviceDesc = desc;
+	// Phase 8.25.6: Wine d3dcaps.h 的 D3DFINDDEVICERESULT 字段是 ddHwDesc / ddSwDesc,
+	//   没有 ddDeviceDesc。改用 ddHwDesc 填充硬件能力描述。
+	b->ddHwDesc = desc;
 	return D3D_OK;
 }
 
@@ -149,15 +151,15 @@ HRESULT m_IDirect3D3::CreateVertexBuffer(dx6::LPD3DVERTEXBUFFERDESC a, dx6::LPDI
 
 	// 把 DX6 dx6::D3DVERTEXBUFFERDESC 翻译到 D3D9 CreateVertexBuffer。
 	// dwCaps 决定 pool，dwFVF 决定 fvf，dwSize 决定 length。
-	ND3D9::D3DPOOL pool = ND3D9::D3DPOOL_MANAGED;
+	D3DPOOL pool = D3DPOOL_MANAGED;
 	if (a->dwCaps & D3DVBCAPS_SYSTEMMEMORY)
 	{
-		pool = ND3D9::D3DPOOL_SYSTEMMEM;
+		pool = D3DPOOL_SYSTEMMEM;
 	}
 	else if (a->dwCaps & D3DVBCAPS_WRITEONLY)
 	{
 		// WRITEONLY：放 MANAGED 池即可，D3D9 优化时不必回读
-		pool = ND3D9::D3DPOOL_MANAGED;
+		pool = D3DPOOL_MANAGED;
 	}
 	// dx6 没显式标志时默认 MANAGED（与原项目 texture 选 MANAGED 保持一致）
 

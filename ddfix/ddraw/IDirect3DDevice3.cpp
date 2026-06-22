@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -47,45 +47,45 @@ static void GetD3DPrimitiveCount(unsigned vertexCount, dx6::D3DPRIMITIVETYPE typ
 	}
 }
 
-static void GetMagFilterD9(D3DTEXTUREMAGFILTER d6filter, ND3D9::D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMagFilterD9(D3DTEXTUREMAGFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
 	case D3DTFG_POINT:
-		d9filter = ND3D9::D3DTEXF_POINT;
+		d9filter = D3DTEXF_POINT;
 		break;
 	case D3DTFG_LINEAR:
-		d9filter = ND3D9::D3DTEXF_LINEAR;
+		d9filter = D3DTEXF_LINEAR;
 		break;
 	case D3DTFG_FLATCUBIC:
-		d9filter = ND3D9::D3DTEXF_ANISOTROPIC;
+		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
 	case D3DTFG_GAUSSIANCUBIC:
-		d9filter = ND3D9::D3DTEXF_GAUSSIANQUAD;
+		d9filter = D3DTEXF_GAUSSIANQUAD;
 		break;
 	case D3DTFG_ANISOTROPIC:
-		d9filter = ND3D9::D3DTEXF_ANISOTROPIC;
+		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
 	default:
-		d9filter = ND3D9::D3DTEXF_NONE;
+		d9filter = D3DTEXF_NONE;
 		break;
 	}
 }
 
-static void GetMagFilterD6(D3DTEXTUREMAGFILTER& d6filter, ND3D9::D3DTEXTUREFILTERTYPE d9filter)
+static void GetMagFilterD6(D3DTEXTUREMAGFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
-	case ND3D9::D3DTEXF_POINT:
+	case D3DTEXF_POINT:
 		d6filter = D3DTFG_POINT;
 		break;
-	case ND3D9::D3DTEXF_LINEAR:
+	case D3DTEXF_LINEAR:
 		d6filter = D3DTFG_LINEAR;
 		break;
-	case ND3D9::D3DTEXF_GAUSSIANQUAD:
+	case D3DTEXF_GAUSSIANQUAD:
 		d6filter = D3DTFG_GAUSSIANCUBIC;
 		break;
-	case ND3D9::D3DTEXF_ANISOTROPIC:
+	case D3DTEXF_ANISOTROPIC:
 		d6filter = D3DTFG_ANISOTROPIC;
 		break;
 	default:
@@ -94,36 +94,36 @@ static void GetMagFilterD6(D3DTEXTUREMAGFILTER& d6filter, ND3D9::D3DTEXTUREFILTE
 	}
 }
 
-static void GetMinFilterD9(D3DTEXTUREMINFILTER d6filter, ND3D9::D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMinFilterD9(D3DTEXTUREMINFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
 	case D3DTFN_POINT:
-		d9filter = ND3D9::D3DTEXF_POINT;
+		d9filter = D3DTEXF_POINT;
 		break;
 	case D3DTFN_LINEAR:
-		d9filter = ND3D9::D3DTEXF_LINEAR;
+		d9filter = D3DTEXF_LINEAR;
 		break;
 	case D3DTFN_ANISOTROPIC:
-		d9filter = ND3D9::D3DTEXF_ANISOTROPIC;
+		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
 	default:
-		d9filter = ND3D9::D3DTEXF_POINT;
+		d9filter = D3DTEXF_POINT;
 		break;
 	}
 }
 
-static void GetMinFilterD6(D3DTEXTUREMINFILTER& d6filter, ND3D9::D3DTEXTUREFILTERTYPE d9filter)
+static void GetMinFilterD6(D3DTEXTUREMINFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
-	case ND3D9::D3DTEXF_POINT:
+	case D3DTEXF_POINT:
 		d6filter = D3DTFN_POINT;
 		break;
-	case ND3D9::D3DTEXF_LINEAR:
+	case D3DTEXF_LINEAR:
 		d6filter = D3DTFN_LINEAR;
 		break;
-	case ND3D9::D3DTEXF_ANISOTROPIC:
+	case D3DTEXF_ANISOTROPIC:
 		d6filter = D3DTFN_ANISOTROPIC;
 		break;
 	default:
@@ -132,36 +132,36 @@ static void GetMinFilterD6(D3DTEXTUREMINFILTER& d6filter, ND3D9::D3DTEXTUREFILTE
 	}
 }
 
-static void GetMipFilterD9(D3DTEXTUREMIPFILTER d6filter, ND3D9::D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMipFilterD9(D3DTEXTUREMIPFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
 	case D3DTFP_NONE:
-		d9filter = ND3D9::D3DTEXF_NONE;
+		d9filter = D3DTEXF_NONE;
 		break;
 	case D3DTFP_POINT:
-		d9filter = ND3D9::D3DTEXF_POINT;
+		d9filter = D3DTEXF_POINT;
 		break;
 	case D3DTFP_LINEAR:
-		d9filter = ND3D9::D3DTEXF_LINEAR;
+		d9filter = D3DTEXF_LINEAR;
 		break;
 	default:
-		d9filter = ND3D9::D3DTEXF_NONE;
+		d9filter = D3DTEXF_NONE;
 		break;
 	}
 }
 
-static void GetMipFilterD6(D3DTEXTUREMIPFILTER& d6filter, ND3D9::D3DTEXTUREFILTERTYPE d9filter)
+static void GetMipFilterD6(D3DTEXTUREMIPFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
-	case ND3D9::D3DTEXF_NONE:
+	case D3DTEXF_NONE:
 		d6filter = D3DTFP_NONE;
 		break;
-	case ND3D9::D3DTEXF_POINT:
+	case D3DTEXF_POINT:
 		d6filter = D3DTFP_POINT;
 		break;
-	case ND3D9::D3DTEXF_LINEAR:
+	case D3DTEXF_LINEAR:
 		d6filter = D3DTFP_LINEAR;
 		break;
 	default:
@@ -350,7 +350,7 @@ HRESULT m_IDirect3DDevice3::BeginScene()
 
 HRESULT m_IDirect3DDevice3::EndScene()
 {
-	//ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_FILLMODE, ND3D9::D3DFILL_WIREFRAME);
+	//ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 	return ND3D9::D3D9Context::Instance()->GetDevice()->EndScene();
 }
 
@@ -425,8 +425,8 @@ HRESULT m_IDirect3DDevice3::Begin(dx6::D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 	if (c & D3DDP_DONOTLIGHT)
 	{
 		auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
-		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
-		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+		device9->SetRenderState(D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(D3DRS_AMBIENT, 0x00ffffff);
 	}
 
 	return D3D_OK;
@@ -499,13 +499,13 @@ HRESULT m_IDirect3DDevice3::End(DWORD a)
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	if (a & D3DDP_DONOTLIGHT)
 	{
-		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
-		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+		device9->SetRenderState(D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(D3DRS_AMBIENT, 0x00ffffff);
 	}
 	device9->LightEnable(0, false);
 	hr = device9->SetFVF(m_immediateFVF);
 	hr = device9->DrawPrimitiveUP(
-		(ND3D9::D3DPRIMITIVETYPE)m_immediatePrimType,
+		(D3DPRIMITIVETYPE)m_immediatePrimType,
 		primitiveCount,
 		m_immediateVB.data(),
 		m_immediateStride);
@@ -541,7 +541,7 @@ HRESULT m_IDirect3DDevice3::GetRenderState(dx6::D3DRENDERSTATETYPE a, LPDWORD b)
 	case D3DRENDERSTATE_ZBIAS:
 		break;
 	default:
-		hr = ND3D9::D3D9Context::Instance()->GetDevice()->GetRenderState((ND3D9::D3DRENDERSTATETYPE)a, b);
+		hr = ND3D9::D3D9Context::Instance()->GetDevice()->GetRenderState((D3DRENDERSTATETYPE)a, b);
 		break;
 	}
 	return hr;
@@ -567,26 +567,26 @@ HRESULT m_IDirect3DDevice3::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 	case D3DRENDERSTATE_COLORKEYENABLE:
 		m_colorKeyEnabled = b;
 		if (m_colorKeyEnabled)
-			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((ND3D9::D3DRS_ALPHATESTENABLE), TRUE);
+			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((D3DRS_ALPHATESTENABLE), TRUE);
 		break;
 	case D3DRENDERSTATE_ZBIAS:
 		break;
 	case D3DRENDERSTATE_TEXTUREMAPBLEND:
 	{
-		ND3D9::D3DTEXTUREOP opD9 = ND3D9::D3DTOP_DISABLE;
+		D3DTEXTUREOP opD9 = D3DTOP_DISABLE;
 		switch ((dx6::D3DTEXTUREBLEND)b)
 		{
 		case D3DTBLEND_DECAL:
 			assert(false);
 			break;
 		case D3DTBLEND_MODULATE:
-			opD9 = ND3D9::D3DTOP_MODULATE;
+			opD9 = D3DTOP_MODULATE;
 			break;
 		case D3DTBLEND_DECALALPHA:
 			assert(false);
 			break;
 		case D3DTBLEND_MODULATEALPHA:
-			opD9 = ND3D9::D3DTOP_MODULATEALPHA_ADDCOLOR;
+			opD9 = D3DTOP_MODULATEALPHA_ADDCOLOR;
 			break;
 		case D3DTBLEND_DECALMASK:
 			assert(false);
@@ -598,23 +598,23 @@ HRESULT m_IDirect3DDevice3::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 			assert(false);
 			break;
 		case D3DTBLEND_ADD:
-			opD9 = ND3D9::D3DTOP_ADD;
+			opD9 = D3DTOP_ADD;
 			assert(false);
 			break;
 		default:
 			assert(false);
 			break;
 		}
-		ND3D9::D3D9Context::Instance()->GetDevice()->SetTextureStageState(0, ND3D9::D3DTSS_COLOROP, opD9);
-		ND3D9::D3D9Context::Instance()->GetDevice()->SetTextureStageState(0, ND3D9::D3DTSS_ALPHAOP, opD9);
+		ND3D9::D3D9Context::Instance()->GetDevice()->SetTextureStageState(0, D3DTSS_COLOROP, opD9);
+		ND3D9::D3D9Context::Instance()->GetDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, opD9);
 		break;
 	}
 // 	case D3DRENDERSTATE_FILLMODE:
 // 		b = D3DFILL_WIREFRAME;
-// 		hr = ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((ND3D9::D3DRENDERSTATETYPE)a, b);
+// 		hr = ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((D3DRENDERSTATETYPE)a, b);
 // 		break;
 	default:
-		hr = ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((ND3D9::D3DRENDERSTATETYPE)a, b);
+		hr = ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((D3DRENDERSTATETYPE)a, b);
 		break;
 	}
 	return hr;
@@ -650,20 +650,20 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 		assert(false);
 		break;
 	case D3DLIGHTSTATE_FOGMODE:
-		hr = device9->SetRenderState(ND3D9::D3DRS_FOGTABLEMODE, b);
-		hr = device9->SetRenderState(ND3D9::D3DRS_FOGVERTEXMODE, b);
+		hr = device9->SetRenderState(D3DRS_FOGTABLEMODE, b);
+		hr = device9->SetRenderState(D3DRS_FOGVERTEXMODE, b);
 		break;
 	case D3DLIGHTSTATE_FOGSTART:
-		hr = device9->SetRenderState(ND3D9::D3DRS_FOGSTART, b);
+		hr = device9->SetRenderState(D3DRS_FOGSTART, b);
 		break;
 	case D3DLIGHTSTATE_FOGEND:
-		hr = device9->SetRenderState(ND3D9::D3DRS_FOGEND, b);
+		hr = device9->SetRenderState(D3DRS_FOGEND, b);
 		break;
 	case D3DLIGHTSTATE_FOGDENSITY:
-		hr = device9->SetRenderState(ND3D9::D3DRS_FOGDENSITY, b);
+		hr = device9->SetRenderState(D3DRS_FOGDENSITY, b);
 		break;
 	case D3DLIGHTSTATE_COLORVERTEX:
-		hr = device9->SetRenderState(ND3D9::D3DRS_COLORVERTEX, b);
+		hr = device9->SetRenderState(D3DRS_COLORVERTEX, b);
 		break;
 	default:
 		assert(false);
@@ -675,30 +675,30 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 HRESULT m_IDirect3DDevice3::SetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
-	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
+	auto matrix9 = (D3DXMATRIX*)matrix;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (tsType)
 	{
 	case D3DTRANSFORMSTATE_WORLD:
-		hr = device9->SetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
+		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_VIEW:
-		hr = device9->SetTransform(ND3D9::D3DTS_VIEW, matrix9);
+		hr = device9->SetTransform(D3DTS_VIEW, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_PROJECTION:
-		hr = device9->SetTransform(ND3D9::D3DTS_PROJECTION, matrix9);
+		hr = device9->SetTransform(D3DTS_PROJECTION, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD1:
-		hr = device9->SetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
+		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD2:
-		hr = device9->SetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
+		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD3:
-		hr = device9->SetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
+		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
-		hr = device9->SetTransform((ND3D9::D3DTRANSFORMSTATETYPE)tsType, matrix9);
+		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)tsType, matrix9);
 		break;
 	}
 	return hr;
@@ -707,30 +707,30 @@ HRESULT m_IDirect3DDevice3::SetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6:
 HRESULT m_IDirect3DDevice3::GetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
-	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
+	auto matrix9 = (D3DXMATRIX*)matrix;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (tsType)
 	{
 	case D3DTRANSFORMSTATE_WORLD:
-		hr = device9->GetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
+		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_VIEW:
-		hr = device9->GetTransform(ND3D9::D3DTS_VIEW, matrix9);
+		hr = device9->GetTransform(D3DTS_VIEW, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_PROJECTION:
-		hr = device9->GetTransform(ND3D9::D3DTS_PROJECTION, matrix9);
+		hr = device9->GetTransform(D3DTS_PROJECTION, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD1:
-		hr = device9->GetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
+		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD2:
-		hr = device9->GetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
+		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD3:
-		hr = device9->GetTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
+		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
-		hr = device9->GetTransform((ND3D9::D3DTRANSFORMSTATETYPE)tsType, matrix9);
+		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)tsType, matrix9);
 		break;
 	}
 	return hr;
@@ -739,30 +739,30 @@ HRESULT m_IDirect3DDevice3::GetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6:
 HRESULT m_IDirect3DDevice3::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6::LPD3DMATRIX matrix)
 {
 	HRESULT hr = DDERR_GENERIC;
-	auto matrix9 = (ND3D9::D3DXMATRIX*)matrix;
+	auto matrix9 = (D3DXMATRIX*)matrix;
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (tsType)
 	{
 	case D3DTRANSFORMSTATE_WORLD:
-		hr = device9->MultiplyTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
+		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_VIEW:
-		hr = device9->MultiplyTransform(ND3D9::D3DTS_VIEW, matrix9);
+		hr = device9->MultiplyTransform(D3DTS_VIEW, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_PROJECTION:
-		hr = device9->MultiplyTransform(ND3D9::D3DTS_PROJECTION, matrix9);
+		hr = device9->MultiplyTransform(D3DTS_PROJECTION, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD1:
-		hr = device9->MultiplyTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
+		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD2:
-		hr = device9->MultiplyTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
+		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
 	case D3DTRANSFORMSTATE_WORLD3:
-		hr = device9->MultiplyTransform((ND3D9::D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
+		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
-		hr = device9->MultiplyTransform((ND3D9::D3DTRANSFORMSTATETYPE)tsType, matrix9);
+		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)tsType, matrix9);
 		break;
 	}
 	return hr;
@@ -775,12 +775,12 @@ HRESULT m_IDirect3DDevice3::DrawPrimitive(dx6::D3DPRIMITIVETYPE dptPrimitiveType
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	if (dwFlags & D3DDP_DONOTLIGHT)
 	{
-		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
-		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+		device9->SetRenderState(D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(D3DRS_AMBIENT, 0x00ffffff);
 	}
 	else
 	{
-		//device9->SetRenderState(ND3D9::D3DRS_LIGHTING, TRUE);
+		//device9->SetRenderState(D3DRS_LIGHTING, TRUE);
 	}
 
 	int primitiveCount = 0;
@@ -788,7 +788,7 @@ HRESULT m_IDirect3DDevice3::DrawPrimitive(dx6::D3DPRIMITIVETYPE dptPrimitiveType
 	GetD3DPrimitiveCount(dwVertexCount, dptPrimitiveType, primitiveCount);
 	device9->LightEnable(0, false);
 	hr = device9->SetFVF(dwVertexTypeDesc);
-	hr = device9->DrawPrimitiveUP((ND3D9::D3DPRIMITIVETYPE)dptPrimitiveType, primitiveCount, lpVertices, vertexStreamZeroStride);
+	hr = device9->DrawPrimitiveUP((D3DPRIMITIVETYPE)dptPrimitiveType, primitiveCount, lpVertices, vertexStreamZeroStride);
 	return hr;
 }
 
@@ -805,18 +805,18 @@ HRESULT m_IDirect3DDevice3::DrawIndexedPrimitive(dx6::D3DPRIMITIVETYPE d3dptPrim
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	if (dwFlags & D3DDP_DONOTLIGHT)
 	{
-		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
-		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+		device9->SetRenderState(D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(D3DRS_AMBIENT, 0x00ffffff);
 	}
 	else
 	{
-		//device9->SetRenderState(ND3D9::D3DRS_LIGHTING, TRUE);
+		//device9->SetRenderState(D3DRS_LIGHTING, TRUE);
 	}
 	int primitiveCount = 0;
 	int vertexStreamZeroStride = D3DXGetFVFVertexSize(dwVertexTypeDesc);
 	GetD3DPrimitiveCount(dwIndexCount, d3dptPrimitiveType, primitiveCount);
 	hr = device9->SetFVF(dwVertexTypeDesc);
-	hr = device9->DrawIndexedPrimitiveUP((ND3D9::D3DPRIMITIVETYPE)d3dptPrimitiveType,0, dwVertexCount,  primitiveCount, lpwIndices, ND3D9::D3DFMT_INDEX16, lpvVertices, vertexStreamZeroStride);
+	hr = device9->DrawIndexedPrimitiveUP((D3DPRIMITIVETYPE)d3dptPrimitiveType,0, dwVertexCount,  primitiveCount, lpwIndices, D3DFMT_INDEX16, lpvVertices, vertexStreamZeroStride);
 	return hr;
 }
 
@@ -868,7 +868,7 @@ HRESULT m_IDirect3DDevice3::ComputeSphereVisibility(dx6::LPD3DVECTOR a, dx6::LPD
 HRESULT m_IDirect3DDevice3::GetTexture(DWORD a, dx6::LPDIRECT3DTEXTURE2 * b)
 {
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
-	SmartPtr<ND3D9::IDirect3DBaseTexture9> tex9;
+	SmartPtr<IDirect3DBaseTexture9> tex9;
 	device9->GetTexture(a, &tex9);
 	if (!tex9)
 	{
@@ -898,7 +898,7 @@ HRESULT m_IDirect3DDevice3::SetTexture(DWORD a, dx6::LPDIRECT3DTEXTURE2 b)
 	}
 	else
 	{
-		ND3D9::IDirect3DBaseTexture9* tex9 = nullptr;
+		IDirect3DBaseTexture9* tex9 = nullptr;
 		device9->GetTexture(a, &tex9);
 		if (tex9)
 		{
@@ -920,52 +920,52 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	switch (dwState)
 	{
 	case D3DTSS_ADDRESS:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_ADDRESSU, pValue);
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_ADDRESSV, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSU, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSV, pValue);
 		break;
 	case D3DTSS_ADDRESSU:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_ADDRESSU, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSU, pValue);
 		break;
 	case D3DTSS_ADDRESSV:
-		device9->GetSamplerState(0, ND3D9::D3DSAMP_ADDRESSV, pValue);
+		device9->GetSamplerState(0, D3DSAMP_ADDRESSV, pValue);
 		break;
 	case D3DTSS_BORDERCOLOR:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_BORDERCOLOR, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_BORDERCOLOR, pValue);
 		break;
 	case D3DTSS_MAGFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE d9Value;
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MAGFILTER, (DWORD*)&d9Value);
+		D3DTEXTUREFILTERTYPE d9Value;
+		hr = device9->GetSamplerState(0, D3DSAMP_MAGFILTER, (DWORD*)&d9Value);
 		GetMagFilterD6((D3DTEXTUREMAGFILTER&)*pValue, d9Value);
 		break;
 	}
 	case D3DTSS_MINFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE d9Value;
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MINFILTER, (DWORD*)&d9Value);
+		D3DTEXTUREFILTERTYPE d9Value;
+		hr = device9->GetSamplerState(0, D3DSAMP_MINFILTER, (DWORD*)&d9Value);
 		GetMinFilterD6((D3DTEXTUREMINFILTER&)*pValue, d9Value);
 		
 		break;
 	}
 	case D3DTSS_MIPFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE d9Value;
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MIPFILTER, (DWORD*)&d9Value);
+		D3DTEXTUREFILTERTYPE d9Value;
+		hr = device9->GetSamplerState(0, D3DSAMP_MIPFILTER, (DWORD*)&d9Value);
 		GetMipFilterD6((D3DTEXTUREMIPFILTER&)*pValue, d9Value);
 		
 		break;
 	}
 	case D3DTSS_MIPMAPLODBIAS:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MIPMAPLODBIAS, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, pValue);
 		break;
 	case D3DTSS_MAXMIPLEVEL:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MAXMIPLEVEL, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_MAXMIPLEVEL, pValue);
 		break;
 	case D3DTSS_MAXANISOTROPY:
-		hr = device9->GetSamplerState(0, ND3D9::D3DSAMP_MAXANISOTROPY, pValue);
+		hr = device9->GetSamplerState(0, D3DSAMP_MAXANISOTROPY, pValue);
 		break;
 	default:
-		hr = device9->GetTextureStageState(dwStage, (ND3D9::D3DTEXTURESTAGESTATETYPE)dwState, pValue);
+		hr = device9->GetTextureStageState(dwStage, (D3DTEXTURESTAGESTATETYPE)dwState, pValue);
 		break;
 	}
 
@@ -979,50 +979,50 @@ HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	switch (dwState)
 	{
 	case D3DTSS_ADDRESS:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_ADDRESSU, dwValue);
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_ADDRESSV, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSU, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSV, dwValue);
 		break;
 	case D3DTSS_ADDRESSU:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_ADDRESSU, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSU, dwValue);
 		break;
 	case D3DTSS_ADDRESSV:
-		device9->SetSamplerState(0, ND3D9::D3DSAMP_ADDRESSV, dwValue);
+		device9->SetSamplerState(0, D3DSAMP_ADDRESSV, dwValue);
 		break;
 	case D3DTSS_BORDERCOLOR:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_BORDERCOLOR, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_BORDERCOLOR, dwValue);
 		break;
 	case D3DTSS_MAGFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE newValue;
+		D3DTEXTUREFILTERTYPE newValue;
 		GetMagFilterD9((D3DTEXTUREMAGFILTER)dwValue, newValue);
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MAGFILTER, newValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MAGFILTER, newValue);
 		break;
 	}
 	case D3DTSS_MINFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE newValue;
+		D3DTEXTUREFILTERTYPE newValue;
 		GetMinFilterD9((D3DTEXTUREMINFILTER)dwValue, newValue);
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MINFILTER, newValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MINFILTER, newValue);
 		break;
 	}
 	case D3DTSS_MIPFILTER:
 	{
-		ND3D9::D3DTEXTUREFILTERTYPE newValue;
+		D3DTEXTUREFILTERTYPE newValue;
 		GetMipFilterD9((D3DTEXTUREMIPFILTER)dwValue, newValue);
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MIPFILTER, newValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MIPFILTER, newValue);
 		break;
 	}
 	case D3DTSS_MIPMAPLODBIAS:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MIPMAPLODBIAS, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, dwValue);
 		break;
 	case D3DTSS_MAXMIPLEVEL:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MAXMIPLEVEL, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MAXMIPLEVEL, dwValue);
 		break;
 	case D3DTSS_MAXANISOTROPY:
-		hr = device9->SetSamplerState(0, ND3D9::D3DSAMP_MAXANISOTROPY, dwValue);
+		hr = device9->SetSamplerState(0, D3DSAMP_MAXANISOTROPY, dwValue);
 		break;
 	default:
-		hr = device9->SetTextureStageState(dwStage, (ND3D9::D3DTEXTURESTAGESTATETYPE)dwState, dwValue);
+		hr = device9->SetTextureStageState(dwStage, (D3DTEXTURESTAGESTATETYPE)dwState, dwValue);
 		break;
 	}
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -82,13 +82,13 @@ HRESULT m_IDirect3DVertexBuffer7::Lock(DWORD a, LPVOID * b, LPDWORD c)
 	// 这里 0,0 锁整段，把 size 通过 GetDesc 取出来回填。
 	if (m_vertexBuffer9Handle)
 	{
-		auto vb9 = ND3D9::D3D9Context::Instance()->GetResource9<ND3D9::IDirect3DVertexBuffer9>(m_vertexBuffer9Handle, nullptr);
+		auto vb9 = ND3D9::D3D9Context::Instance()->GetResource9<IDirect3DVertexBuffer9>(m_vertexBuffer9Handle, nullptr);
 		if (vb9)
 		{
 			HRESULT hr = vb9->Lock(0, 0, (VOID**)b, a);
 			if (SUCCEEDED(hr) && c)
 			{
-				ND3D9::D3DVERTEXBUFFER_DESC desc;
+				D3DVERTEXBUFFER_DESC desc;
 				if (SUCCEEDED(vb9->GetDesc(&desc)))
 				{
 					*c = desc.Size;
@@ -109,7 +109,7 @@ HRESULT m_IDirect3DVertexBuffer7::Unlock()
 	// P0 修复 (Task 1.2): 有 D3D9 缓冲时优先用 D3D9 Unlock。
 	if (m_vertexBuffer9Handle)
 	{
-		auto vb9 = ND3D9::D3D9Context::Instance()->GetResource9<ND3D9::IDirect3DVertexBuffer9>(m_vertexBuffer9Handle, nullptr);
+		auto vb9 = ND3D9::D3D9Context::Instance()->GetResource9<IDirect3DVertexBuffer9>(m_vertexBuffer9Handle, nullptr);
 		if (vb9)
 		{
 			return vb9->Unlock();

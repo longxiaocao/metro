@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -148,7 +148,7 @@ HRESULT m_IDirect3DViewport3::AddLight(dx6::LPDIRECT3DLIGHT a)
 	}
 
 	// TODO: 我不确定这样转换是否正确
-	ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_LIGHTING, TRUE);
+	ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(D3DRS_LIGHTING, TRUE);
 	// TODO: not working on point light.
 	auto light = static_cast<m_IDirect3DLight*>(a);
 	for (size_t i = 0; i < m_lights.size(); i++)
@@ -158,7 +158,7 @@ HRESULT m_IDirect3DViewport3::AddLight(dx6::LPDIRECT3DLIGHT a)
 		m_lights[i] = light;
 		light->AddRef();
 
-		ND3D9::D3DLIGHT9 light9 = *light->GetLight9();
+		D3DLIGHT9 light9 = *light->GetLight9();
 		auto device = WrapperAddressLookupTable->FindWrapperOnly<m_IDirect3DDevice3>(dx6::IID_IDirect3DDevice3);
 		auto lightAmbient = device->GetLightAmbient();
 		light9.Ambient = lightAmbient;
@@ -196,8 +196,8 @@ HRESULT m_IDirect3DViewport3::DeleteLight(dx6::LPDIRECT3DLIGHT a)
 	// TODO: 我不确定这样转换是否正确
 	if (lightCountInScene == 0)
 	{
-		ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
-		ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+		ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(D3DRS_LIGHTING, FALSE);
+		ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(D3DRS_AMBIENT, 0x00ffffff);
 	}
 	return DD_OK;
 }
@@ -252,7 +252,7 @@ HRESULT m_IDirect3DViewport3::SetViewport2(dx6::LPD3DVIEWPORT2 a)
 	if (a)
 	{
 		if (!m_viewport9)
-			m_viewport9 = new ND3D9::D3DVIEWPORT9;
+			m_viewport9 = new D3DVIEWPORT9;
 
 		m_viewport9->X = a->dwX;
 		m_viewport9->Y = a->dwY;

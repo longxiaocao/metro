@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -80,10 +80,10 @@ HRESULT m_IDirect3DLight::SetLight(dx6::LPD3DLIGHT a)
 	if (a)
 	{
 		if (!m_light9)
-			m_light9 = new ND3D9::D3DLIGHT9;
+			m_light9 = new D3DLIGHT9;
 
-		ND3D9::D3DLIGHT9 light9 = { 0 };
-		light9.Type = (ND3D9::D3DLIGHTTYPE) a->dltType;
+		D3DLIGHT9 light9 = { 0 };
+		light9.Type = (D3DLIGHTTYPE) a->dltType;
 		light9.Diffuse = a->dcvColor;
 		light9.Position = a->dvPosition;
 		light9.Direction = a->dvDirection;
