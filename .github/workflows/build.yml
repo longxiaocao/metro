@@ -92,13 +92,26 @@ jobs:
             foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
           }
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          # 先写到文件，再打印到 stdout（避免 Tee-Object 兼容问题）
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTS=ON -DBUILD_DDFIX_LIB=OFF -DGameExe="${{ env.GAME_EXE }}" -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}" *>&1 | Out-File -FilePath build\configure.log -Encoding utf8
-          $cmakeExit = $LASTEXITCODE
-          Get-Content build\configure.log
+          # 用 Start-Process 捕获 stdout/stderr（PowerShell 7+ 也支持 2>&1 |）
+          $proc = Start-Process -FilePath "cmake" -ArgumentList @(
+            "-S", "."
+            "-B", "build"
+            "-G", "Visual Studio 17 2022"
+            "-A", "x64"
+            "-DBUILD_TESTS=ON"
+            "-DBUILD_DDFIX_LIB=OFF"
+            "-DGameExe=`"${{ env.GAME_EXE }}`""
+            "-DGameStartupArgs=`"${{ env.GAME_STARTUP_ARGS }}`""
+          ) -NoNewWindow -Wait -PassThru -RedirectStandardOutput build\configure.out -RedirectStandardError build\configure.err
+          # 合并并显示
+          if (Test-Path build\configure.out) { Get-Content build\configure.out }
+          if (Test-Path build\configure.err) { Write-Host "--- stderr ---"; Get-Content build\configure.err }
+          "---" | Out-File -Append build\configure.out
+          if (Test-Path build\configure.err) { Get-Content build\configure.err | Out-File -Append build\configure.out }
+          $cmakeExit = $proc.ExitCode
           Write-Host "::notice::CMake exit code: $cmakeExit"
           if ($cmakeExit -ne 0) {
-            Write-Host "::error::CMake configure failed, log saved at build\configure.log"
+            Write-Host "::error::CMake configure failed, see build\configure.out and build\configure.err"
             exit $cmakeExit
           }
 
@@ -165,6 +178,8 @@ jobs:
             build/CMakeFiles/CMakeError.log
             build/CMakeFiles/CMakeOutput.log
             build/configure.log
+            build/configure.out
+            build/configure.err
             build/build.log
           if-no-files-found: ignore
           retention-days: 7
