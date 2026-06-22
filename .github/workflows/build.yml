@@ -143,8 +143,21 @@ jobs:
         run: |
           cmake --build build --config ${{ env.BUILD_TYPE }} -j 2>&1 | Tee-Object -FilePath build\build.log
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "::error::Build failed, showing last 200 lines of build.log:"
-            Get-Content build\build.log -Tail 200
+            Write-Host "::error::Build failed, exit code $LASTEXITCODE"
+            if (Test-Path build\build.log) {
+              # Phase 8.10: 提取所有 MSVC error 行（最多 30 条）作为 annotation
+              $msvcErrors = Get-Content build\build.log | Select-String -Pattern "error\s" | Select-Object -First 30
+              foreach ($line in $msvcErrors) { Write-Host "::error::$line" }
+              Write-Host "::error::--- Last 100 lines of build.log (full log in step summary) ---"
+              Get-Content build\build.log -Tail 100
+              # 把 build.log 完整内容写入 step summary（不受 annotations 100 行限制）
+              if ($env:GITHUB_STEP_SUMMARY) {
+                "`n## Build log`n``````n$((Get-Content build\build.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
+                  Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+              }
+            } else {
+              Write-Host "::error::Build failed (no build.log captured)"
+            }
             exit $LASTEXITCODE
           }
 
