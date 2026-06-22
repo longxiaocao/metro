@@ -56,34 +56,49 @@ jobs:
       #      fxc.exe 由 Visual Studio + Windows SDK 自带
       # Phase 7: 用 Visual Studio 17 2022 generator（最稳定，避免 Ninja 与 MSVC toolchain 配置问题）
       # Phase 8: 把 Windows SDK bin 加入 PATH，让 fxc.exe 可被 find_program 探测到
-      - name: Configure CMake
+      # Phase 8.2: 单独跑 cmake 帮助命令验证环境，再正式 configure
+      - name: Verify CMake environment
         shell: pwsh
+        continue-on-error: true   # 验证步骤失败不阻塞
         run: |
-          # Phase 8: 把 fxc.exe 可能位置加入 PATH（覆盖 Windows SDK 22621/19041/22000 等）
+          # 把 fxc.exe 路径加入 PATH
           $sdkRoot = "C:\Program Files (x86)\Windows Kits\10\bin"
           if (Test-Path $sdkRoot) {
             $fxcDirs = Get-ChildItem $sdkRoot -Directory -ErrorAction SilentlyContinue |
                        Where-Object { Test-Path (Join-Path $_.FullName "x64\fxc.exe") } |
                        ForEach-Object { $_.FullName + "\x64" }
-            foreach ($d in $fxcDirs) {
-              $env:PATH = "$d;$env:PATH"
-              Write-Host "::notice::Added to PATH: $d"
-            }
-            Write-Host "Final fxc.exe candidates:"
-            Get-Command fxc.exe -ErrorAction SilentlyContinue | Format-Table Source, Version
+            foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
           }
-          cmake -S . -B build `
-            -G "Visual Studio 17 2022" `
-            -A x64 `
-            -DBUILD_TESTS=ON `
-            -DBUILD_DDFIX_LIB=OFF `
-            -DGameExe="${{ env.GAME_EXE }}" `
-            -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}" 2>&1 | Tee-Object -FilePath build\configure.log
+          Write-Host "--- cmake version ---"
+          cmake --version 2>&1
+          Write-Host "--- fxc.exe location ---"
+          Get-Command fxc.exe -ErrorAction SilentlyContinue
+          Write-Host "--- DXSDK path ---"
+          Write-Host "WindowsKits10: $(Test-Path 'C:/Program Files (x86)/Windows Kits/10')"
+          Write-Host "ExtraDxSDK/Include: $(Test-Path './ExtraDxSDK/Include')"
+          Write-Host "ExtraDxSDK/Lib: $(Test-Path './ExtraDxSDK/Lib')"
+          Write-Host "ColorKey.hlsl: $(Test-Path './ddfix/ddraw/ColorKey.hlsl')"
+          Write-Host "PWD: $((Get-Location).Path)"
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          # Phase 8: 把 fxc.exe 路径加入 PATH
+          $sdkRoot = "C:\Program Files (x86)\Windows Kits\10\bin"
+          if (Test-Path $sdkRoot) {
+            $fxcDirs = Get-ChildItem $sdkRoot -Directory -ErrorAction SilentlyContinue |
+                       Where-Object { Test-Path (Join-Path $_.FullName "x64\fxc.exe") } |
+                       ForEach-Object { $_.FullName + "\x64" }
+            foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
+          }
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          # 先写到文件，再打印到 stdout（避免 Tee-Object 兼容问题）
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTS=ON -DBUILD_DDFIX_LIB=OFF -DGameExe="${{ env.GAME_EXE }}" -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}" *>&1 | Out-File -FilePath build\configure.log -Encoding utf8
           $cmakeExit = $LASTEXITCODE
+          Get-Content build\configure.log
           Write-Host "::notice::CMake exit code: $cmakeExit"
           if ($cmakeExit -ne 0) {
-            Write-Host "::error::CMake configure failed, showing FULL configure.log:"
-            Get-Content build\configure.log
+            Write-Host "::error::CMake configure failed, log saved at build\configure.log"
             exit $cmakeExit
           }
 
