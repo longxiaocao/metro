@@ -47,23 +47,23 @@ static void GetD3DPrimitiveCount(unsigned vertexCount, dx6::D3DPRIMITIVETYPE typ
 	}
 }
 
-static void GetMagFilterD9(D3DTEXTUREMAGFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMagFilterD9(dx6::D3DTEXTUREMAGFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
-	case D3DTFG_POINT:
+	case dx6::D3DTFG_POINT:
 		d9filter = D3DTEXF_POINT;
 		break;
-	case D3DTFG_LINEAR:
+	case dx6::D3DTFG_LINEAR:
 		d9filter = D3DTEXF_LINEAR;
 		break;
-	case D3DTFG_FLATCUBIC:
+	case dx6::D3DTFG_FLATCUBIC:
 		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
-	case D3DTFG_GAUSSIANCUBIC:
+	case dx6::D3DTFG_GAUSSIANCUBIC:
 		d9filter = D3DTEXF_GAUSSIANQUAD;
 		break;
-	case D3DTFG_ANISOTROPIC:
+	case dx6::D3DTFG_ANISOTROPIC:
 		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
 	default:
@@ -72,39 +72,39 @@ static void GetMagFilterD9(D3DTEXTUREMAGFILTER d6filter, D3DTEXTUREFILTERTYPE& d
 	}
 }
 
-static void GetMagFilterD6(D3DTEXTUREMAGFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
+static void GetMagFilterD6(dx6::D3DTEXTUREMAGFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
 	case D3DTEXF_POINT:
-		d6filter = D3DTFG_POINT;
+		d6filter = dx6::D3DTFG_POINT;
 		break;
 	case D3DTEXF_LINEAR:
-		d6filter = D3DTFG_LINEAR;
+		d6filter = dx6::D3DTFG_LINEAR;
 		break;
 	case D3DTEXF_GAUSSIANQUAD:
-		d6filter = D3DTFG_GAUSSIANCUBIC;
+		d6filter = dx6::D3DTFG_GAUSSIANCUBIC;
 		break;
 	case D3DTEXF_ANISOTROPIC:
-		d6filter = D3DTFG_ANISOTROPIC;
+		d6filter = dx6::D3DTFG_ANISOTROPIC;
 		break;
 	default:
-		d6filter = D3DTFG_POINT;
+		d6filter = dx6::D3DTFG_POINT;
 		break;
 	}
 }
 
-static void GetMinFilterD9(D3DTEXTUREMINFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMinFilterD9(dx6::D3DTEXTUREMINFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
-	case D3DTFN_POINT:
+	case dx6::D3DTFN_POINT:
 		d9filter = D3DTEXF_POINT;
 		break;
-	case D3DTFN_LINEAR:
+	case dx6::D3DTFN_LINEAR:
 		d9filter = D3DTEXF_LINEAR;
 		break;
-	case D3DTFN_ANISOTROPIC:
+	case dx6::D3DTFN_ANISOTROPIC:
 		d9filter = D3DTEXF_ANISOTROPIC;
 		break;
 	default:
@@ -113,36 +113,36 @@ static void GetMinFilterD9(D3DTEXTUREMINFILTER d6filter, D3DTEXTUREFILTERTYPE& d
 	}
 }
 
-static void GetMinFilterD6(D3DTEXTUREMINFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
+static void GetMinFilterD6(dx6::D3DTEXTUREMINFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
 	case D3DTEXF_POINT:
-		d6filter = D3DTFN_POINT;
+		d6filter = dx6::D3DTFN_POINT;
 		break;
 	case D3DTEXF_LINEAR:
-		d6filter = D3DTFN_LINEAR;
+		d6filter = dx6::D3DTFN_LINEAR;
 		break;
 	case D3DTEXF_ANISOTROPIC:
-		d6filter = D3DTFN_ANISOTROPIC;
+		d6filter = dx6::D3DTFN_ANISOTROPIC;
 		break;
 	default:
-		d6filter = D3DTFN_POINT;
+		d6filter = dx6::D3DTFN_POINT;
 		break;
 	}
 }
 
-static void GetMipFilterD9(D3DTEXTUREMIPFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
+static void GetMipFilterD9(dx6::D3DTEXTUREMIPFILTER d6filter, D3DTEXTUREFILTERTYPE& d9filter)
 {
 	switch (d6filter)
 	{
-	case D3DTFP_NONE:
+	case dx6::D3DTFP_NONE:
 		d9filter = D3DTEXF_NONE;
 		break;
-	case D3DTFP_POINT:
+	case dx6::D3DTFP_POINT:
 		d9filter = D3DTEXF_POINT;
 		break;
-	case D3DTFP_LINEAR:
+	case dx6::D3DTFP_LINEAR:
 		d9filter = D3DTEXF_LINEAR;
 		break;
 	default:
@@ -151,21 +151,21 @@ static void GetMipFilterD9(D3DTEXTUREMIPFILTER d6filter, D3DTEXTUREFILTERTYPE& d
 	}
 }
 
-static void GetMipFilterD6(D3DTEXTUREMIPFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
+static void GetMipFilterD6(dx6::D3DTEXTUREMIPFILTER& d6filter, D3DTEXTUREFILTERTYPE d9filter)
 {
 	switch (d9filter)
 	{
 	case D3DTEXF_NONE:
-		d6filter = D3DTFP_NONE;
+		d6filter = dx6::D3DTFP_NONE;
 		break;
 	case D3DTEXF_POINT:
-		d6filter = D3DTFP_POINT;
+		d6filter = dx6::D3DTFP_POINT;
 		break;
 	case D3DTEXF_LINEAR:
-		d6filter = D3DTFP_LINEAR;
+		d6filter = dx6::D3DTFP_LINEAR;
 		break;
 	default:
-		d6filter = D3DTFP_POINT;
+		d6filter = dx6::D3DTFP_POINT;
 		break;
 	}
 }
@@ -936,23 +936,23 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	{
 		D3DTEXTUREFILTERTYPE d9Value;
 		hr = device9->GetSamplerState(0, D3DSAMP_MAGFILTER, (DWORD*)&d9Value);
-		GetMagFilterD6((D3DTEXTUREMAGFILTER&)*pValue, d9Value);
+		GetMagFilterD6((dx6::D3DTEXTUREMAGFILTER&)*pValue, d9Value);
 		break;
 	}
 	case D3DTSS_MINFILTER:
 	{
 		D3DTEXTUREFILTERTYPE d9Value;
 		hr = device9->GetSamplerState(0, D3DSAMP_MINFILTER, (DWORD*)&d9Value);
-		GetMinFilterD6((D3DTEXTUREMINFILTER&)*pValue, d9Value);
-		
+		GetMinFilterD6((dx6::D3DTEXTUREMINFILTER&)*pValue, d9Value);
+
 		break;
 	}
 	case D3DTSS_MIPFILTER:
 	{
 		D3DTEXTUREFILTERTYPE d9Value;
 		hr = device9->GetSamplerState(0, D3DSAMP_MIPFILTER, (DWORD*)&d9Value);
-		GetMipFilterD6((D3DTEXTUREMIPFILTER&)*pValue, d9Value);
-		
+		GetMipFilterD6((dx6::D3DTEXTUREMIPFILTER&)*pValue, d9Value);
+
 		break;
 	}
 	case D3DTSS_MIPMAPLODBIAS:
@@ -994,21 +994,21 @@ HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	case D3DTSS_MAGFILTER:
 	{
 		D3DTEXTUREFILTERTYPE newValue;
-		GetMagFilterD9((D3DTEXTUREMAGFILTER)dwValue, newValue);
+		GetMagFilterD9((dx6::D3DTEXTUREMAGFILTER)dwValue, newValue);
 		hr = device9->SetSamplerState(0, D3DSAMP_MAGFILTER, newValue);
 		break;
 	}
 	case D3DTSS_MINFILTER:
 	{
 		D3DTEXTUREFILTERTYPE newValue;
-		GetMinFilterD9((D3DTEXTUREMINFILTER)dwValue, newValue);
+		GetMinFilterD9((dx6::D3DTEXTUREMINFILTER)dwValue, newValue);
 		hr = device9->SetSamplerState(0, D3DSAMP_MINFILTER, newValue);
 		break;
 	}
 	case D3DTSS_MIPFILTER:
 	{
 		D3DTEXTUREFILTERTYPE newValue;
-		GetMipFilterD9((D3DTEXTUREMIPFILTER)dwValue, newValue);
+		GetMipFilterD9((dx6::D3DTEXTUREMIPFILTER)dwValue, newValue);
 		hr = device9->SetSamplerState(0, D3DSAMP_MIPFILTER, newValue);
 		break;
 	}
