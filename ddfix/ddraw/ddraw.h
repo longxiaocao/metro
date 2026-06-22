@@ -2,10 +2,32 @@
 
 #define INITGUID
 
+// Phase 8.22: 在 d3d.h (DX6, 在 dx6 namespace 内) 之前先 include d3d9types.h,
+//   让全局命名空间的 _D3DMATERIAL9 / D3DCOLORVALUE / _D3DFILLMODE / _D3DBLEND 等
+//   DX9 类型/枚举以 struct/enum 形式完整定义。
+//
+// 背景:
+//   d3d.h 内部会 #define DIRECT3D_VERSION 0x0600 (#define 全局,不受 namespace 约束),
+//   而 d3d9types.h 头部有 #if (DIRECT3D_VERSION >= 0x0900) 守护。如果在
+//   d3d.h 之后再 include d3d9types.h,_D3DMATERIAL9 可能因前向声明/typedef
+//   冲突被识别为 class,导致结构体字段 (D3DCOLORVALUE Diffuse) 报 C3646
+//   "unknown override specifier" (CI #25, #27 行号 173-189 一致)。
+//
+// 修复:
+//   1) 强制覆盖 DIRECT3D_VERSION = 0x0900
+//   2) 在 d3d.h 之前 include d3d9types.h,确保全局 _D3DMATERIAL9 以 struct 完整展开
+//   3) d3d.h 之后包裹到 dx6 namespace,DX6 枚举 (_D3DFILLMODE/_D3DBLEND) 在 dx6 内,
+//      DX9 枚举在全局,两个 namespace 互不冲突,无重定义问题
+#if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
+#undef DIRECT3D_VERSION
+#define DIRECT3D_VERSION 0x0900
+#endif
+#include <d3d9types.h>
+
 #include <ddraw.h>
 #include <ddrawex.h>
 
-// Phase 8.19: 把 d3d.h (含 d3dtypes.h) 包裹到 dx6 命名空间，避开与 d3d9.h (含
+// Phase 8.19: 把 d3d.h (含 d3dtypes.h) 包裹到 dx6 命名空间,避开与 d3d9.h (含
 // d3d9types.h) 的 enum type 重定义冲突 (C2011)。
 //
 // 根因：

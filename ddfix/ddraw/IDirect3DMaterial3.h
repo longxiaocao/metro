@@ -1,31 +1,19 @@
 #pragma once
 
-// Phase 8.21: 修复 d3d9types.h 被 DIRECT3D_VERSION 保护跳过,导致
-//   D3DMATERIAL9 / D3DCOLORVALUE / D3DDEVTYPE 等类型未定义的问题。
+// Phase 8.22: ddraw.h 顶部已经先 include d3d9types.h (DIRECT3D_VERSION=0x0900),
+//   全局 D3DMATERIAL9 / D3DCOLORVALUE 已完整定义,本头文件不再需要重复 include。
 //
-// 根因链:
-//   1) ddraw.h 包含 <d3d.h> (在 dx6 namespace 内),d3d.h 自身会
-//      #define DIRECT3D_VERSION 0x0600 (DX6),这个 #define 是全局的
-//      (#define 不受 namespace 约束)。
-//   2) <d3d9types.h> / <d3d9caps.h> / <d3d9.h> 头部都有
-//      #if (DIRECT3D_VERSION >= 0x0900) 守护,版本不足时整个头文件被 #if/#endif 跳过,
-//      所有 D3D9 类型/接口都不展开。
-//   3) D3D9Context.h 通过 #undef+重新 #define 强制 DIRECT3D_VERSION=0x0900
-//      解决了它自己 TU 的问题,但 IDirect3DMaterial3.h 在 D3D9Context.h 之前
-//      被 ddraw.h 间接 include,DIRECT3D_VERSION 还是 0x0600。
-//   4) 因此在 IDirect3DMaterial3.h 直接 #include <d3d9types.h> 时,
-//      d3d9types.h 整个被跳过,D3DMATERIAL9 / D3DCOLORVALUE 都未定义
-//      (CI #26 错误:d3d9types.h 跳过 → d3d9caps.h D3DDEVTYPE 未定义 →
-//       d3d9.h D3DCOLOR 未定义 → IDirect3DMaterial3.h:39 报 C2061)。
-//
-// 修复:include d3d9types.h 之前强制覆盖 DIRECT3D_VERSION = 0x0900,
-//      与 D3D9Context.h 保持一致。d3dtypes.h 的枚举 (DX6) 已在 ddraw.h 的
-//      dx6 namespace 内,d3d9types.h 枚举 (DX9) 在全局,两个 namespace 互不冲突。
-#if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
-#undef DIRECT3D_VERSION
-#define DIRECT3D_VERSION 0x0900
-#endif
-#include <d3d9types.h>
+// 历史:
+//   Phase 8.20: 移除 ND3D9 前向声明,改 #include <d3d9types.h> → 失败
+//     (CI #26): 当时 d3d.h (dx6 namespace 内) 已 define DIRECT3D_VERSION=0x0600,
+//     d3d9types.h 头部 #if (DIRECT3D_VERSION >= 0x0900) 把整个头文件跳过。
+//   Phase 8.21: include d3d9types.h 前 #undef+重新 #define 0x0900 → 失败
+//     (CI #27): 行号与 CI #25 一致(173-189),_D3DMATERIAL9 仍被识别为 class,
+//     推测是 d3d9types.h 内部 _D3DMATERIAL9 定义时,本 TU 已存在其他形式的
+//     _D3DMATERIAL9 声明(class 或 typedef)导致重复定义冲突。
+//   Phase 8.22 (本版): 不在 h 文件 include d3d9types.h,改在 ddraw.h 顶部统一处理
+//     (见 ddraw.h 的 Phase 8.22 注释),确保 d3d.h 包裹到 dx6 namespace 之前,
+//     d3d9types.h 已在全局命名空间以 struct 形式完整定义 _D3DMATERIAL9。
 
 class m_IDirect3DMaterial3 : public dx6::IDirect3DMaterial3, public AddressLookupTableObject
 {
