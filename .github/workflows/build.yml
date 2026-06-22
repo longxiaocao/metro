@@ -11,10 +11,12 @@
 name: build-and-test
 
 on:
+  # Phase 8.12: 监听 public（原监听 main, master, develop, 'phase-*'）
+  # 仓库默认分支已切到 public；main 已删除；保留 master/develop 兜底
   push:
-    branches: [ main, master, develop, 'phase-*' ]
+    branches: [ public, master, develop ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ public, master, develop ]
   workflow_dispatch:
 
 # 防止多个 push 同时跑（节省 runner 时间）
