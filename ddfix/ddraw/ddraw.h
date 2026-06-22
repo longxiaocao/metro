@@ -1,10 +1,32 @@
-﻿#pragma once
+#pragma once
 
 #define INITGUID
 
 #include <ddraw.h>
 #include <ddrawex.h>
+
+// Phase 8.19: 把 d3d.h (含 d3dtypes.h) 包裹到 dx6 命名空间，避开与 d3d9.h (含
+// d3d9types.h) 的 enum type 重定义冲突 (C2011)。
+//
+// 根因：
+//   d3dtypes.h 定义了 _D3DFILLMODE / _D3DBLEND / _D3DSHADEMODE / _D3DLIGHTTYPE /
+//   _D3DTEXTUREADDRESS / _D3DCULL / _D3DCMPFUNC / _D3DSTENCILOP / _D3DFOGMODE 等
+//   枚举类型，d3d9types.h 也定义了同名同值枚举。两个头文件无法在同一个 TU 的
+//   全局命名空间共存（C2011 'enum' type redefinition）。
+//
+// 解决：
+//   把 d3d.h (DX6/7 接口 + d3dtypes.h 的所有内容) 整个放进 dx6:: 命名空间。
+//   ddraw.h / ddrawex.h 不含冲突枚举，仍在全局命名空间。
+//   d3d9.h (含 d3d9types.h) 在全局/ ND3D9:: 命名空间，不再与 dx6:: 冲突。
+//
+// 代价：所有用到 IDirect3D* / LPDIRECT3D* / D3DVERTEX / D3DMATRIX 等 DX6/7
+//       类型的代码必须加 dx6:: 前缀。d3dtypes.h 内的回调类型
+//       (LPD3DENUMDEVICESCALLBACK 等) 和 struct (D3DFINDDEVICESEARCH 等) 也
+//       全部进入 dx6::。
+namespace dx6 {
 #include <d3d.h>
+}
+
 #include "..\Common\Wrapper.h"
 #include "..\Common\Logging.h"
 
