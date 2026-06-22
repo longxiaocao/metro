@@ -6,19 +6,27 @@
 struct HWND__;
 typedef struct HWND__ *HWND;
 
-// Phase 8.17: d3d9.h / d3dx9.h 自身已有标准头保护：
-//   d3d9.h  : #ifndef _D3D9_H_  /  #define _D3D9_H_
-//   d3dx9.h : #ifndef __D3DX9_H__  /  #define __D3DX9_H__
-//   d3d9types.h : #ifndef _d3d9types_h_  /  #define _d3d9types_h_
-// 而且本头用 #pragma once。**不需要也不应该** #undef 这些保护宏：
-//   1) 删 #undef _D3D9_H_ —— 之前 undef 后 d3d9.h 被二次 include，
-//      d3d9types.h 内的 _D3DMATRIX/_D3DBLEND 等 9 个类型在 C++ 模式下
-//      报 C2011 'enum/struct type redefinition'（CI #19 失败根因）。
-//   2) 删 #undef DIRECT3D_VERSION —— d3d9.h 内部已经 #ifndef 包了，
-//      重复 #define 也不会出错。
-//   3) 删 #undef D3DMATRIX_DEFINED —— d3dx9.h 自带 #ifndef D3DMATRIX_DEFINED 保护。
-// Phase 8.14 的目标（把 d3dx9.h 移出 ND3D9 namespace，避免 windows.h typedef 被困）
-// 仍然通过 file-scope #include 实现，与这些 #undef 无关。
+// Phase 8.17: 正确处理 DIRECT3D_VERSION 与 d3d9.h 头保护。
+//
+// 1) d3d.h (DirectX 6/7) 可能已经被 ddraw.h 间接 include 并把 DIRECT3D_VERSION
+//    设为 0x0600。d3d9.h 头部 #if(DIRECT3D_VERSION >= 0x0900) 会让整个头文件
+//    内容被跳过，导致 d3dx9math.h 用 LPDIRECT3DCUBETEXTURE9 等类型时报
+//    "missing type specifier / syntax error"。
+// 2) d3d9.h 自身有 #ifndef _D3D9_H_ 头保护；d3dx9.h 有 #ifndef __D3DX9_H__
+//    头保护；d3d9types.h 也自带保护。**绝对不能 #undef 这些保护宏**，
+//    否则 d3d9types.h 内的 _D3DMATRIX / _D3DBLEND 等类型在 C++ 模式下
+//    报 C2011 'enum/struct type redefinition'（CI #19 失败根因）。
+// 3) Phase 8.14 的目标（把 d3dx9.h 移出 ND3D9 namespace，避免 windows.h
+//    typedef 被困在 ND3D9 内）仍由 file-scope #include 实现。
+//
+// 修复策略：
+//   * 在 file scope include 之前，用 #if 守护 #define DIRECT3D_VERSION 0x0900
+//     强制覆盖 d3d.h 设的旧版本号；
+//   * **不 #undef _D3D9_H_ / D3DMATRIX_DEFINED / D3DERR_* 等保护宏**。
+#if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
+#undef DIRECT3D_VERSION
+#define DIRECT3D_VERSION 0x0900
+#endif
 #include <d3dx9.h>
 #include "Common/SmartPointer.h"
 
