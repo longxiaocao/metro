@@ -55,19 +55,35 @@ jobs:
       # 注：BUILD_TESTS=ON 是 Phase 5.3 引入，Phase 6.1 开启
       #      fxc.exe 由 Visual Studio + Windows SDK 自带
       # Phase 7: 用 Visual Studio 17 2022 generator（最稳定，避免 Ninja 与 MSVC toolchain 配置问题）
+      # Phase 8: 把 Windows SDK bin 加入 PATH，让 fxc.exe 可被 find_program 探测到
       - name: Configure CMake
         shell: pwsh
         run: |
+          # Phase 8: 把 fxc.exe 可能位置加入 PATH（覆盖 Windows SDK 22621/19041/22000 等）
+          $sdkRoot = "C:\Program Files (x86)\Windows Kits\10\bin"
+          if (Test-Path $sdkRoot) {
+            $fxcDirs = Get-ChildItem $sdkRoot -Directory -ErrorAction SilentlyContinue |
+                       Where-Object { Test-Path (Join-Path $_.FullName "x64\fxc.exe") } |
+                       ForEach-Object { $_.FullName + "\x64" }
+            foreach ($d in $fxcDirs) {
+              $env:PATH = "$d;$env:PATH"
+              Write-Host "::notice::Added to PATH: $d"
+            }
+            Write-Host "Final fxc.exe candidates:"
+            Get-Command fxc.exe -ErrorAction SilentlyContinue | Format-Table Source, Version
+          }
           cmake -S . -B build `
             -G "Visual Studio 17 2022" `
             -A x64 `
             -DBUILD_TESTS=ON `
             -DBUILD_DDFIX_LIB=OFF `
             -DGameExe="${{ env.GAME_EXE }}" `
-            -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}"
-        env:
-          # 确保 fxc.exe 在 PATH（VS 2022 自带 Windows SDK）
-          PATH: "${{ env.PATH }}"
+            -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}" 2>&1 | Tee-Object -FilePath build\configure.log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::CMake configure failed, showing last 100 lines of configure.log:"
+            Get-Content build\configure.log -Tail 100
+            exit $LASTEXITCODE
+          }
 
       # -------------------- 5. build --------------------
       # Phase 7: 捕获 build 输出到日志，失败时显示最后 200 行
