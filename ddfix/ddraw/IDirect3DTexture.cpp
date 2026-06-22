@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -18,7 +18,11 @@
 
 // code is taken from project DXGL
 // Use EXACTLY one line per entry.  Don't change layout of the list.
-static const int START_TEXFORMATS = __LINE__;
+// Phase 5.2: 数组大小改用 std::size 推导，移除 __LINE__ 依赖。
+//   旧实现用 __LINE__ 差值计数，对"必须在文件末尾留 4 行空行"极脆，
+//   任何插入/删除都会让 g_numtexformats 错位。
+//   现改为 static constexpr 派生，编译器自行算长度，零运行时开销。
+#include <iterator>  // std::size
 const DDPIXELFORMAT texformats[] =
 { // Size					Flags							FOURCC	bits	R/Ymask		G/U/Zmask	B/V/STmask	A/Zmask
 { sizeof(DDPIXELFORMAT),	DDPF_PALETTEINDEXED8,			0,		8,		0,			0,			0,			0 },
@@ -32,7 +36,7 @@ const DDPIXELFORMAT texformats[] =
 { sizeof(DDPIXELFORMAT), DDPF_RGB | DDPF_ALPHAPIXELS,		0,		16,		0xF00,		0xF0,		0xF,		0xF000 },
 { sizeof(DDPIXELFORMAT), DDPF_RGB | DDPF_ALPHAPIXELS,		0,		16,		0x7c00,		0x3E0,		0x1F,		0x8000 },
 { sizeof(DDPIXELFORMAT), DDPF_RGB | DDPF_ALPHAPIXELS,		0,		32,		0xFF0000,	0xFF00,		0xFF,		0xFF000000 },
-{ sizeof(DDPIXELFORMAT), DDPF_LUMINANCE,					0,		8,		0xFF,		0,			0,			0 },
+{ sizeof(DDPIXELFORMAT),	DDPF_LUMINANCE,					0,		8,		0xFF,		0,			0,			0 },
 { sizeof(DDPIXELFORMAT),	DDPF_ALPHA,						0,		8,		0,			0,			0,			0 },
 { sizeof(DDPIXELFORMAT),	DDPF_LUMINANCE | DDPF_ALPHAPIXELS,0,		16,		0xFF,		0,			0,			0xFF00 },
 { sizeof(DDPIXELFORMAT), DDPF_ZBUFFER,					0,		16,		0,			0xFFFF,		0,			0 },
@@ -42,8 +46,7 @@ const DDPIXELFORMAT texformats[] =
 { sizeof(DDPIXELFORMAT),	DDPF_ZBUFFER,					0,		32,		8,			0xFFFFFF00,	0xFF,		0 },
 { sizeof(DDPIXELFORMAT),	DDPF_ZBUFFER,					0,		32,		8,			0xFF,		0xFFFFFF00,	0 }
 };
-static const int END_TEXFORMATS = __LINE__ - 4;
-int g_numtexformats = END_TEXFORMATS - START_TEXFORMATS;
+static constexpr int g_numtexformats = static_cast<int>(std::size(texformats));
 const DDPIXELFORMAT* g_texformats = texformats;
 
 HRESULT m_IDirect3DTexture::QueryInterface(REFIID riid, LPVOID * ppvObj)

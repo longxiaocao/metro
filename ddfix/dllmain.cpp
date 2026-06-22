@@ -1,4 +1,4 @@
-﻿#include <windows.h>
+#include <windows.h>
 #include <ddraw.h>
 #include "dinput/dinput.h"
 #undef genericQueryInterface
@@ -12,6 +12,9 @@
 #include <functional>
 #include <list>
 #include <map>
+
+#include "Config/ConfigManager.h"
+#include "Debug/HudRenderer.h"
 
 std::ofstream Log::LOG("ddfix.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>(nullptr);
@@ -335,7 +338,7 @@ namespace DSHOW_HOOK
 		}
 
 		return hr;
-		
+
 	}
 
 	static void Hook()
@@ -354,6 +357,72 @@ namespace DSHOW_HOOK
 	}
 }
 
+// Phase 4.4: F12 切换 HUD 可见性。
+// 设计要点：
+//   - 用 SetWindowsHookEx(WH_KEYBOARD_LL) 监听全局键盘事件。
+//   - 钩子回调里检查 ConfigManager::Instance()->GetDebug().hudEnabled，
+//     关闭时直接 return 0（放行键事件到目标应用）。
+//   - 仅当 hudEnabled==true 时安装钩子；缺省 false → 零开销。
+//   - 注意：DLL_PROCESS_DETACH 必须 UnhookWindowsHookEx，否则 host 进程会闪退。
+//   - 注意：F12 按下后 CallNextHookEx 仍调，让游戏也收到该事件（避免影响游戏内 F12 默认行为）。
+namespace DEBUG_HOOK
+{
+	static HHOOK   g_hHook       = nullptr;
+	static HMODULE g_hModule     = nullptr;
+	static bool    g_hudEnabled  = false;
+
+	static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+	{
+		if (nCode == HC_ACTION && g_hudEnabled)
+		{
+			const auto* p = reinterpret_cast<const KBDLLHOOKSTRUCT*>(lParam);
+			// 仅处理 key down（防止长按 F12 反复 toggle）
+			if (wParam == WM_KEYDOWN && p->vkCode == VK_F12)
+			{
+				NDDFIX::Debug::HudRenderer::Instance()->ToggleVisible();
+				Log() << "F12 pressed, HUD visible=" << (NDDFIX::Debug::HudRenderer::Instance()->IsVisible() ? 1 : 0);
+			}
+		}
+		// 必须调 CallNextHookEx，否则游戏/系统会卡键
+		return CallNextHookEx(g_hHook, nCode, wParam, lParam);
+	}
+
+	static void Install()
+	{
+		if (g_hHook)
+		{
+			return;
+		}
+		// 仅当 ConfigManager 启用 HUD 时才安装（缺省 false → 不挂任何钩）
+		g_hudEnabled = NDDFIX::Config::ConfigManager::Instance()->GetDebug().hudEnabled;
+		if (!g_hudEnabled)
+		{
+			return;
+		}
+		g_hModule = GetModuleHandleA(nullptr); // 当前 DLL 句柄
+		g_hHook = SetWindowsHookExA(WH_KEYBOARD_LL, &LowLevelKeyboardProc, g_hModule, 0);
+		if (g_hHook)
+		{
+			Log() << "DEBUG_HOOK: F12 hook installed (HudEnabled=true)";
+		}
+		else
+		{
+			Log() << "DEBUG_HOOK: SetWindowsHookExA failed, last error=" << GetLastError();
+		}
+	}
+
+	static void Uninstall()
+	{
+		if (g_hHook)
+		{
+			UnhookWindowsHookEx(g_hHook);
+			g_hHook = nullptr;
+			Log() << "DEBUG_HOOK: F12 hook uninstalled";
+		}
+		g_hudEnabled = false;
+	}
+}
+
 
 BOOL WINAPI DllMain(
 	_In_ HINSTANCE hinstDLL,
@@ -364,11 +433,19 @@ BOOL WINAPI DllMain(
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
+		// Phase 3.2: 尽早加载配置，使后续 hook / wrapper 都能读到开关。
+		// 缺 ddfix.ini 不报错，所有结构体取默认值（与旧硬编码一致）。
+		NDDFIX::Config::ConfigManager::Instance()->Load();
 		DDRAW_HOOK::CollectOrignalProcAddress();
 		DINPUT_HOOK::Hook(); // 如果不Hook，会导致调试困难
 		DSHOW_HOOK::Hook(); // 避免DShow里使用DX6的接口
+		// Phase 4.4: 安装 F12 切换钩子。内部按 ConfigManager.HudEnabled 判定是否真挂。
+		DEBUG_HOOK::Install();
 		break;
 	case DLL_PROCESS_DETACH:
+		// Phase 4.4: 卸载键盘钩，避免 host 进程闪退。
+		DEBUG_HOOK::Uninstall();
+		break;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 	default:

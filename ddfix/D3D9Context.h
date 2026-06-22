@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <map>
 #include <assert.h>
 
@@ -79,6 +79,7 @@ namespace ND3D9
 		Resource9Handle CreateTexture9(int width, int height, UINT levels, DWORD usage, D3DFORMAT format, D3DPOOL pool);
 		Resource9Handle CreateRenderTarget(int width, int height, D3DFORMAT format, D3DMULTISAMPLE_TYPE multiSample, DWORD multisampleQuality, BOOL lockable);
 		Resource9Handle CreateSprite();
+		Resource9Handle CreateVertexBuffer9(UINT length, DWORD usage, DWORD fvf, D3DPOOL pool);
 
 		template<class T>
 		SmartPtr<T> GetResource9(Resource9Handle handle, std::string* pType)
@@ -91,6 +92,15 @@ namespace ND3D9
 		
 		HRESULT ResetDevice();
 		ULONG ReleaseResource9(Resource9Handle handle);
+
+		// Phase 2.3: 共享 ColorKey 像素着色器（懒加载，单例）
+		// 所有 RenderTarget HardwareSurface9Wrapper 共享同一 PS/ConstantTable，避免每次构造时重复 CreatePixelShader。
+		ND3D9::IDirect3DPixelShader9* GetSharedColorKeyShader();
+		ND3D9::ID3DXConstantTable* GetSharedColorKeyConstantTable();
+
+	private:
+		// 内部：懒加载创一次 ColorKey 着色器配套资源。
+		void EnsureSharedColorKeyShader();
 
 	private:
 		IUnknown * GetResource9(Resource9Handle handle, std::string* pType)
@@ -130,5 +140,10 @@ namespace ND3D9
 		bool m_deviceLost;
 
 		::HWND m_hwnd;
+
+		// Phase 2.3: 共享 PS / ConstantTable。裸指针由 D3D9 设备管理，Reset 时随设备一起失效。
+		ND3D9::IDirect3DPixelShader9* m_colorKeyShader;
+		ND3D9::ID3DXConstantTable* m_colorKeyConstantTable;
+		bool m_colorKeyShaderInited;
 	};
 }

@@ -1,5 +1,7 @@
-﻿#include "D3D9Context.h"
+#include "D3D9Context.h"
 #include "Common/Logging.h"
+#include "Config/ConfigManager.h"
+#include "Debug/HudRenderer.h"
 
 using namespace ND3D9;
 
@@ -226,6 +228,42 @@ public:
 	}
 };
 
+class VertexBuffer9Factory final : public IResource9Factory
+{
+public:
+	VertexBuffer9Factory(UINT length, DWORD usage, DWORD fvf, D3DPOOL pool)
+		: m_length(length)
+		, m_usage(usage)
+		, m_fvf(fvf)
+		, m_pool(pool)
+	{
+
+	}
+
+	virtual IUnknown* Create(D3D9Context* context) const override
+	{
+		IDirect3DVertexBuffer9* vb9 = nullptr;
+		context->GetDevice()->CreateVertexBuffer(m_length, m_usage, m_fvf, m_pool, &vb9, nullptr);
+		return vb9;
+	}
+
+	virtual bool IsCreateInVideoMemory() const override
+	{
+		return m_pool == D3DPOOL_DEFAULT;
+	}
+
+	virtual std::string GetType() const override
+	{
+		return "VertexBuffer";
+	}
+
+private:
+	UINT m_length;
+	DWORD m_usage;
+	DWORD m_fvf;
+	D3DPOOL m_pool;
+};
+
 D3D9Context::~D3D9Context()
 {
 	logf("%d resource not releases.", m_resAllocated.size());
@@ -257,6 +295,8 @@ void D3D9Context::Uninitialize()
 {
 	if (m_d3d9)
 	{
+		// Phase 4.2: HUD 依赖设备，先释放。
+		NDDFIX::Debug::HudRenderer::Instance()->Shutdown();
 		m_d3dDev9->Release();
 		m_d3d9->Release();
 	}
@@ -271,13 +311,17 @@ void D3D9Context::Initialize(::HWND hwnd)
 
 	CreateDevice();
 
-	if (TRUE)
+	// Phase 3.3: LightingEnabled 配置驱动
+	if (NDDFIX::Config::ConfigManager::Instance()->GetRender().lightingEnabled)
 	{
-		// TODO: trick for game meteor blade
-		//m_d3dDev9->SetRenderState(D3DRS_LIGHTING, TRUE);
-		//m_d3dDev9->SetRenderState(D3DRS_AMBIENT, 0xffffffff);
-		//m_d3dDev9->SetRenderState(D3DRS_COLORVERTEX, TRUE);
+		m_d3dDev9->SetRenderState(D3DRS_LIGHTING, TRUE);
+		m_d3dDev9->SetRenderState(D3DRS_AMBIENT, 0xffffffff);
+		m_d3dDev9->SetRenderState(D3DRS_COLORVERTEX, TRUE);
 	}
+
+	// Phase 4.2: HUD 初始化（D3DXFont 创建设备相关资源）。
+	// 必须在 CreateDevice 之后调；设备丢失/重置由 ResetDevice 内部钩。
+	NDDFIX::Debug::HudRenderer::Instance()->Initialize();
 }
 
 D3D9Context* D3D9Context::Instance()
@@ -295,6 +339,9 @@ D3D9Context::D3D9Context()
 	, m_hwnd(0)
 	, m_resCountHistory(0)
 	, m_backBuffer9Handle(0)
+	, m_colorKeyShader(nullptr)
+	, m_colorKeyConstantTable(nullptr)
+	, m_colorKeyShaderInited(false)
 {
 }
 
@@ -307,6 +354,8 @@ void D3D9Context::GetBackBufferSize(int* width, int* height)
 void D3D9Context::TagDeviceLost()
 {
 	m_deviceLost = true;
+	// Phase 4.2: HUD 同步通知，让 ID3DXFont 释放内部 video memory 引用。
+	NDDFIX::Debug::HudRenderer::Instance()->OnDeviceLost();
 }
 
 bool D3D9Context::IsDeviceLost() const
@@ -333,11 +382,24 @@ HRESULT D3D9Context::ResetDevice()
 		if (info.factory->IsCreateInVideoMemory())
 		{
 			auto ptr = GetResource9(info.handle, nullptr); // internal will AddRef
+			// P0 修复: 之前 `refs = ptr->Release(); refs = ptr->Release(); assert(refs == 0);`
+			// D3D9 内部对象经常有 1 个未释放的内部 ref，二次 Release 不会归零，assert 直接挂。
+			// 改为 while 循环 + log warning，保证不崩。
 			ULONG refs = ptr->Release();
-			refs = ptr->Release();
-			assert(refs == 0);
+			while (refs > 0)
+			{
+				refs = ptr->Release();
+			}
+			if (refs != 0)
+			{
+				logf("D3D9Context::ResetDevice warning: resource handle=%d refcount=%u (expected 0)", info.handle, refs);
+			}
 		}
 	}
+
+	// Phase 4.2: 在 Reset 之前通知 HUD 释放 video memory 引用。
+	// 必须先于 m_d3dDev9->Reset()，否则 D3D9 内部对象会失效。
+	NDDFIX::Debug::HudRenderer::Instance()->OnDeviceLost();
 
 	D3DPRESENT_PARAMETERS d3dpp;
 	BuildD3DPresentParameters(d3dpp);
@@ -355,7 +417,17 @@ HRESULT D3D9Context::ResetDevice()
 			}
 		}
 
-		return D3D_OK;
+		// Phase 2.3: D3D9 Reset 会丢弃所有内部 PS / ConstantTable 引用，
+	// 重置懒加载标志，下次 GetSharedColorKeyShader() 触发重新编译。
+	// 旧指针在 D3D9 内部已被清理，外部只持有裸指针，无需 Release。
+	m_colorKeyShader = nullptr;
+	m_colorKeyConstantTable = nullptr;
+	m_colorKeyShaderInited = false;
+
+	// Phase 4.2: HUD 资源重新挂回设备（D3DXFont::OnResetDevice）。
+	NDDFIX::Debug::HudRenderer::Instance()->OnDeviceReset();
+
+	return D3D_OK;
 	}
 	else
 	{
@@ -389,6 +461,8 @@ HRESULT D3D9Context::CreateDevice()
 
 void D3D9Context::BuildD3DPresentParameters(D3DPRESENT_PARAMETERS &d3dpp)
 {
+	// Phase 3.3: Render 段配置驱动，缺省值与原硬编码一致
+	const auto& render = NDDFIX::Config::ConfigManager::Instance()->GetRender();
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
 	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -396,10 +470,10 @@ void D3D9Context::BuildD3DPresentParameters(D3DPRESENT_PARAMETERS &d3dpp)
 	d3dpp.hDeviceWindow = (HWND)m_hwnd;
 	d3dpp.BackBufferWidth = m_backBufferWidth;
 	d3dpp.BackBufferHeight = m_backBufferHeight;
-	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+	d3dpp.Flags = render.lockableBackBuffer ? D3DPRESENTFLAG_LOCKABLE_BACKBUFFER : 0;
 	d3dpp.EnableAutoDepthStencil = FALSE;
 	d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	d3dpp.PresentationInterval = render.vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 }
 
 Resource9Handle D3D9Context::CreateOffScreenSurface9(int width, int height, D3DFORMAT format, D3DPOOL pool)
@@ -469,5 +543,58 @@ Resource9Handle D3D9Context::CreateSprite()
 	auto factory = new Sprite9Factory();
 	auto ptr = factory->Create(this);
 	return LogResource(factory, ptr);
+}
+
+Resource9Handle D3D9Context::CreateVertexBuffer9(UINT length, DWORD usage, DWORD fvf, D3DPOOL pool)
+{
+	auto factory = new VertexBuffer9Factory(length, usage, fvf, pool);
+	auto ptr = factory->Create(this);
+	return LogResource(factory, ptr);
+}
+
+// Phase 2.3: 共享 ColorKey PS / ConstantTable 懒加载。
+// 之所以放在 D3D9Context 单例而不是 HardwareSurface9Wrapper 内部，是因为：
+// 1) D3D9 每帧 SetPixelShader + Set*Constant 开销可控，但 CreatePixelShader 是一次性编译，应只做一次。
+// 2) D3D9 Reset 会清空所有内部对象，所以 ResetDevice 之后要把 m_colorKeyShaderInited 重置，
+//    下次 GetSharedColorKeyShader() 触发 EnsureSharedColorKeyShader() 重新编译。
+// 注意：编译产物 g_colorKeyHLSLC 来自 ddraw/ColorKey.hlsl，由 CMakeLists.txt 用 fxc.exe 预编译生成 ColorKeyHLSLC.h。
+// 这里 forward declare 头引用，在 IDirectDrawSurface4.cpp 顶部已 #include "ColorKeyHLSLC.h"，
+// 但 D3D9Context.cpp 不应直接依赖 ddraw 子目录头，所以用 extern 引用。
+extern const DWORD g_colorKeyHLSLC[];
+
+void D3D9Context::EnsureSharedColorKeyShader()
+{
+	if (m_colorKeyShaderInited)
+	{
+		return;
+	}
+	if (!m_d3dDev9)
+	{
+		return;
+	}
+	HRESULT hr = m_d3dDev9->CreatePixelShader((DWORD*)g_colorKeyHLSLC, &m_colorKeyShader);
+	if (SUCCEEDED(hr))
+	{
+		hr = ND3D9::D3DXGetShaderConstantTable((DWORD*)g_colorKeyHLSLC, &m_colorKeyConstantTable);
+	}
+	if (FAILED(hr))
+	{
+		logf("D3D9Context::EnsureSharedColorKeyShader failed: hr=0x%08x", hr);
+		m_colorKeyShader = nullptr;
+		m_colorKeyConstantTable = nullptr;
+	}
+	m_colorKeyShaderInited = true;
+}
+
+IDirect3DPixelShader9* D3D9Context::GetSharedColorKeyShader()
+{
+	EnsureSharedColorKeyShader();
+	return m_colorKeyShader;
+}
+
+ID3DXConstantTable* D3D9Context::GetSharedColorKeyConstantTable()
+{
+	EnsureSharedColorKeyShader();
+	return m_colorKeyConstantTable;
 }
 

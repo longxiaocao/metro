@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+#include <vector>
 class m_IDirectDrawSurface4;
 class m_IDirect3DViewport3;
 class m_IDirect3DDevice3 : public IDirect3DDevice3, public AddressLookupTableObject
@@ -11,6 +12,18 @@ private:
 	bool m_colorKeyEnabled;
 	ULONG Refs;
 	D3DCOLORVALUE m_lightAmbient;
+
+	// Phase 2.5: 立即模式 (immediate mode) 状态。
+	// Begin() 时分配 m_immediateVB、记录 primitive type / FVF / stride；
+	// Vertex() 时按 stride memcpy 追加到 m_immediateVB；
+	// End() 时把 m_immediateVB.data() 当 user pointer 传给 device9->DrawPrimitiveUP，然后清空。
+	// 这样不需要走 DX6 原始 ExecuteBuffer → D3D9 ExecuteBuffer 模拟，性能与 DrawPrimitive 路径接近。
+	std::vector<BYTE> m_immediateVB;
+	bool m_immediateModeActive;
+	D3DPRIMITIVETYPE m_immediatePrimType;
+	DWORD m_immediateFVF;
+	DWORD m_immediateVertexCount;
+	DWORD m_immediateStride;
 public:
 	m_IDirect3DDevice3(IDirect3DDevice3 *aOriginal, std::shared_ptr<WrapperLookupTable<void>> wrapperAddressLookupTable)
 		: ProxyInterface(aOriginal)
@@ -19,6 +32,11 @@ public:
 		, m_colorKeyEnabled(false)
 		, Refs(1)
 		, m_lightAmbient({0})
+		, m_immediateModeActive(false)
+		, m_immediatePrimType(D3DPT_TRIANGLELIST)
+		, m_immediateFVF(0)
+		, m_immediateVertexCount(0)
+		, m_immediateStride(0)
 	{
 		ProxyAddressLookupTable.SaveAddress(this, ProxyInterface);
 		WrapperAddressLookupTable->SaveWrapper(this, IID_IDirect3DDevice3);

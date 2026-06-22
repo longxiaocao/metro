@@ -1,0 +1,88 @@
+; ddfix.ini - MeteorBladeEnhancer 运行时配置
+;
+; 把本文件改名为 ddfix.ini 后放到 ddfix.dll 同目录（或游戏 exe 同目录）即可生效。
+; 缺省时所有项使用默认值（与 Phase 3 之前的硬编码行为完全一致）。
+;
+; 语法：; 开头为注释，key = value，section 用 [Section] 分隔。
+; 布尔值接受：true / false / 1 / 0 / yes / no / on / off（大小写不敏感）。
+;
+; 任何未识别的 key 会被忽略；任何缺失的 key 用默认值。
+
+[Render]
+; 软件/硬件 Blt 路径选择（替代旧 g_useSoftwareWrapper9）
+;   false = 硬件 Blt（默认，依赖 D3D9 DrawSprite）
+;   true  = 软件 Blt（仅用于老显卡 / Debug）
+UseSoftwareBlt       = false
+
+; 后台缓冲是否可锁（替代 D3DPRESENTFLAG_LOCKABLE_BACKBUFFER）
+;   true  = 创建可锁的后台缓冲，游戏能直接 GetDC 拿位图
+;   false = 标准不可锁后台缓冲，性能略好但 GetDC 走 GetRenderTargetData
+LockableBackBuffer   = true
+
+; 垂直同步（替代 D3DPRESENT_INTERVAL_IMMEDIATE）
+;   false = 立即 Present（默认，最高帧率，可能撕裂）
+;   true  = 等待 vsync（更平滑，帧率受显示器限制）
+VSync                = false
+
+; 是否启用 D3D 光照（替代 D3DRS_LIGHTING）
+;   true  = 启用 D3DRS_LIGHTING + D3DRS_AMBIENT(0xffffffff) + D3DRS_COLORVERTEX（默认）
+;   false = 关掉所有光照，游戏自己处理 vertex color
+LightingEnabled      = true
+
+; BackBuffer::Lock 行为（替代 "trick for meteor blade"）
+;   false = 永远返 DDERR_GENERIC（默认，强迫游戏不 Lock BackBuffer）
+;   true  = 真正 LockRect BackBuffer（部分老游戏需要）
+AllowBackBufferLock  = false
+
+; 3D OffScreen::Lock 行为
+;   false = 3DDEVICE+OFFSCREENPLAIN 的 Lock 永远返 DDERR_INVALIDPARAMS（默认）
+;   true  = 真正执行 LockRect
+Allow3DOffScreenLock = false
+
+; ZBuffer::Restore 时是否自动开 Z test
+;   true  = SetRenderState(D3DRS_ZENABLE, TRUE)（默认，对流星蝴蝶剑必要）
+;   false = 仅设回 DepthStencil，不动 ZENABLE
+ZBufferAutoRestore   = true
+
+
+[Log]
+; 日志级别：DEBUG / INFO / WARN / ERROR（大小写不敏感）
+Level     = INFO
+
+; 日志输出文件路径（相对 dll 所在目录）
+File      = ddfix.log
+
+; 是否同时输出到 stdout（调试时方便 tail；release 时建议 false）
+ToConsole = false
+
+
+[Debug]
+; 是否启用调试 HUD（Phase 4 消费，当前为占位）
+;   true  = 启动时显示 HUD
+;   false = 默认不显示
+HudEnabled   = false
+
+; HUD 显示/隐藏切换快捷键（Virtual-Key 名，参考 Phase 4 实现）
+HotkeyToggle = F12
+
+
+; ---------------------------------------------------------------------------
+; Game Profile 区段
+; ---------------------------------------------------------------------------
+; 用法：在下面新增 [Game.<exe名字不含扩展名>] 段，覆盖默认 Render / Log / Debug。
+; 加载时 ConfigManager 会读当前进程的 exe 名（如 meteor.exe → "meteor"），
+; 大小写不敏感匹配 [Game.Meteor] / [Game.METEOR] / [Game.meteor] 任一即生效。
+; 一个段只放需要覆盖的 key；未列出的 key 继承 [Render]/[Log]/[Debug] 默认。
+
+; 流星蝴蝶剑.net 专用 profile（exe 名字：meteor.exe）
+; 打开 UseSoftwareBlt / 关 AllowBackBufferLock / 开 ZBufferAutoRestore
+; 与 Phase 3 之前的硬编码行为一致；缺省时其实和默认段一样。
+; 这里只是示意：给同款游戏加一份"显式声明"，便于读者理解 profile 机制。
+[Game.MeteorBlade]
+UseSoftwareBlt       = false
+LockableBackBuffer   = true
+VSync                = false
+LightingEnabled      = true
+AllowBackBufferLock  = false
+Allow3DOffScreenLock = false
+ZBufferAutoRestore   = true

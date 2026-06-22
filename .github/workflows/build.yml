@@ -1,0 +1,166 @@
+# Phase 6.7: GitHub Actions CI for MeteorBladeEnhancer
+#
+# 目标：
+#   1. 跑 cmake configure + build（带 BUILD_TESTS=ON）
+#   2. 跑 ctest（unit tests）
+#   3. 上传构建产物 ddfix.dll
+#
+# 平台：windows-latest（VS 2022 + Windows SDK 10）
+# 注意：ddfix 是 Windows-only 项目，DX6/DX9/DInput8/Strmiids 都只能在 Windows 上链
+
+name: build-and-test
+
+on:
+  push:
+    branches: [ main, master, develop, 'phase-*' ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+# 防止多个 push 同时跑（节省 runner 时间）
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CMake configuration
+  BUILD_TYPE: Release
+  GAME_EXE: ""           # 测试用不到，留空
+  GAME_STARTUP_ARGS: "w"
+
+jobs:
+  build-windows:
+    name: Windows Build + Tests
+    runs-on: windows-latest
+
+    steps:
+      # -------------------- 1. checkout --------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      # -------------------- 2. setup MSVC --------------------
+      - name: Setup MSVC (Developer Command Prompt)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # -------------------- 3. setup CMake --------------------
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      # -------------------- 4. configure --------------------
+      # 注：BUILD_TESTS=ON 是 Phase 5.3 引入，Phase 6.1 开启
+      #      fxc.exe 由 Visual Studio + Windows SDK 自带
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -S . -B build `
+            -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -DBUILD_TESTS=ON `
+            -DBUILD_DDFIX_LIB=OFF `
+            -DGameExe="${{ env.GAME_EXE }}" `
+            -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}"
+        env:
+          # 确保 fxc.exe 在 PATH（VS 2022 自带 Windows SDK）
+          PATH: "${{ env.PATH }}"
+
+      # -------------------- 5. build --------------------
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} -j
+
+      # -------------------- 6. test (ctest) --------------------
+      # ctest 会从 build/ 跑 ddfixtests
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          cd build
+          ctest --output-on-failure -C ${{ env.BUILD_TYPE }} --verbose
+
+      # 或直接跑 ddfixtests 二进制（更详细的 PASS/FAIL 输出）
+      - name: Run ddfixtests directly
+        shell: pwsh
+        if: always()  # 即使 ctest fail 仍跑，保留诊断输出
+        run: |
+          $exe = "build\tests\${{ env.BUILD_TYPE }}\ddfixtests.exe"
+          if (Test-Path $exe) {
+            & $exe --list
+            & $exe
+            $exitCode = $LASTEXITCODE
+            Write-Host "::notice::ddfixtests exit code: $exitCode"
+            if ($exitCode -ne 0) {
+              Write-Host "::error::ddfixtests failed with exit code $exitCode"
+              exit $exitCode
+            }
+          } else {
+            Write-Host "::error::ddfixtests.exe not found at $exe"
+            exit 1
+          }
+
+      # -------------------- 7. 上传构建产物 --------------------
+      - name: Upload ddfix.dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddfix-windows-${{ env.BUILD_TYPE }}
+          path: |
+            build/bin/ddfix.dll
+            build/lib/*.lib
+            build/ddfix/ColorKeyHLSLC.h
+          if-no-files-found: warn
+          retention-days: 14
+
+      # -------------------- 8. 上传测试日志（即使失败也保留） --------------------
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            build/Testing/**/*.log
+            build/CMakeFiles/CMakeError.log
+            build/CMakeFiles/CMakeOutput.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # -------------------- 第二 job：lint 简单静态检查（可选） --------------------
+  lint:
+    name: Lint (documentation + format check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check README exists
+        run: |
+          if [ ! -f README.md ]; then
+            echo "::error::README.md is missing"
+            exit 1
+          fi
+          if [ $(wc -l < README.md) -lt 50 ]; then
+            echo "::error::README.md is too short (got $(wc -l < README.md) lines, want >= 50)"
+            exit 1
+          fi
+          echo "README.md OK ($(wc -l < README.md) lines)"
+
+      - name: Check ARCHITECTURE.md exists
+        run: |
+          if [ ! -f ARCHITECTURE.md ]; then
+            echo "::error::ARCHITECTURE.md is missing"
+            exit 1
+          fi
+          if [ $(wc -l < ARCHITECTURE.md) -lt 50 ]; then
+            echo "::error::ARCHITECTURE.md is too short"
+            exit 1
+          fi
+          echo "ARCHITECTURE.md OK ($(wc -l < ARCHITECTURE.md) lines)"
+
+      - name: Check ddfix.ini.example exists
+        run: |
+          if [ ! -f ddfix.ini.example ]; then
+            echo "::error::ddfix.ini.example is missing"
+            exit 1
+          fi
+          echo "ddfix.ini.example OK"

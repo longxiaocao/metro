@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -29,9 +29,15 @@ HRESULT m_IDirect3D3::QueryInterface(REFIID riid, LPVOID * ppvObj)
 		return S_OK;
 	}
 
+	// Phase 2.6: QueryInterface 创建 m_IDirect3DDevice3 改走 WrapperLookupTable 单例。
+	// 之前是直接 `new m_IDirect3DDevice3(nullptr, nullptr)`，导致每次 QI 都创一个新 instance，
+	// 同一份逻辑设备在游戏侧被当成两个对象，state 不同步（ColorKey 标志 / light ambient / FVF 等）。
+	// 现在 FindWrapper 会先在 lookup table 里查 IID_IDirect3DDevice3，已存在则复用，
+	// 不存在则 new 并 SaveWrapper。
+	// m_IDirect3DDevice3 构造内已有 `WrapperAddressLookupTable->SaveWrapper(this, IID_IDirect3DDevice3)`，所以单例有效。
 	if (riid == IID_IDirect3DDevice3)
 	{
-		*ppvObj = new m_IDirect3DDevice3(nullptr, nullptr);
+		*ppvObj = WrapperAddressLookupTable->FindWrapper<m_IDirect3DDevice3>(IID_IDirect3DDevice3);
 	}
 	else
 	{
@@ -110,7 +116,17 @@ HRESULT m_IDirect3D3::CreateViewport(LPDIRECT3DVIEWPORT3 * a, LPUNKNOWN b)
 
 HRESULT m_IDirect3D3::FindDevice(LPD3DFINDDEVICESEARCH a, LPD3DFINDDEVICERESULT b)
 {
-	return ProxyInterface->FindDevice(a, b);
+	// P0 修复: 之前直接 ProxyInterface->FindDevice(a, b)，但 ProxyInterface = nullptr → 段错误。
+	// 改用 m_IDirectDraw 缓存的 D3DDEVICEDESC（已在 IDirectDraw 构造时填好）合成 result。
+	if (!a || !b)
+	{
+		return DDERR_INVALIDPARAMS;
+	}
+
+	m_IDirectDraw* ddraw = WrapperAddressLookupTable->FindWrapper<m_IDirectDraw>(IID_IDirectDraw);
+	D3DDEVICEDESC desc = *ddraw->GetD3DDevice3Desc();
+	b->ddDeviceDesc = desc;
+	return D3D_OK;
 }
 
 HRESULT m_IDirect3D3::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE4 b, LPDIRECT3DDEVICE3 * c, LPUNKNOWN d)
@@ -121,14 +137,49 @@ HRESULT m_IDirect3D3::CreateDevice(REFCLSID a, LPDIRECTDRAWSURFACE4 b, LPDIRECT3
 
 HRESULT m_IDirect3D3::CreateVertexBuffer(LPD3DVERTEXBUFFERDESC a, LPDIRECT3DVERTEXBUFFER * b, DWORD c, LPUNKNOWN d)
 {
-	HRESULT hr = ProxyInterface->CreateVertexBuffer(a, b, c, d);
-
-	if (SUCCEEDED(hr))
+	// P0 修复 (Task 1.2): 不再调 ProxyInterface (nullptr)。
+	// 改用 D3D9 device->CreateVertexBuffer，包装成 m_IDirect3DVertexBuffer7。
+	// 注意：函数签名要求返回 LPDIRECT3DVERTEXBUFFER (v1)，m_IDirect3DVertexBuffer7 的 vtable 与 v1 前 8 槽
+	// 兼容（DX6/7 vertex buffer 的 Lock/Unlock/ProcessVertices/GetVertexBufferDesc/Optimize 槽位一致），
+	// 这里用 static_cast 投射。后续 Lock/Unlock 走包装内 D3D9 后端，不依赖 ProxyInterface。
+	if (!a || !b)
 	{
-		*b = ProxyAddressLookupTable.FindAddress<m_IDirect3DVertexBuffer>(*b);
+		return DDERR_INVALIDPARAMS;
 	}
 
-	return hr;
+	// 把 DX6 D3DVERTEXBUFFERDESC 翻译到 D3D9 CreateVertexBuffer。
+	// dwCaps 决定 pool，dwFVF 决定 fvf，dwSize 决定 length。
+	ND3D9::D3DPOOL pool = ND3D9::D3DPOOL_MANAGED;
+	if (a->dwCaps & D3DVBCAPS_SYSTEMMEMORY)
+	{
+		pool = ND3D9::D3DPOOL_SYSTEMMEM;
+	}
+	else if (a->dwCaps & D3DVBCAPS_WRITEONLY)
+	{
+		// WRITEONLY：放 MANAGED 池即可，D3D9 优化时不必回读
+		pool = ND3D9::D3DPOOL_MANAGED;
+	}
+	// dx6 没显式标志时默认 MANAGED（与原项目 texture 选 MANAGED 保持一致）
+
+	DWORD usage = 0;
+	if (a->dwCaps & D3DVBCAPS_DONOTCLIP)
+	{
+		// D3D9 无对应，忽略
+	}
+
+	ND3D9::Resource9Handle vb9Handle = ND3D9::D3D9Context::Instance()->CreateVertexBuffer9(
+		a->dwSize, usage, a->dwFVF, pool);
+
+	if (vb9Handle == 0)
+	{
+		return DDERR_GENERIC;
+	}
+
+	// 包装成 m_IDirect3DVertexBuffer7。第二个参数 (void*) 复用为 Resource9Handle 槽位（见 IDirect3DVertexBuffer7.h）。
+	// ProxyInterface 传 nullptr：游戏后续不会通过 ProxyInterface 调到原始 ddraw。
+	auto wrapper = new m_IDirect3DVertexBuffer7(nullptr, (void*)(INT_PTR)vb9Handle);
+	*b = (LPDIRECT3DVERTEXBUFFER)(IDirect3DVertexBuffer7*)wrapper;
+	return D3D_OK;
 }
 
 HRESULT m_IDirect3D3::EnumZBufferFormats(REFCLSID riidDevice, LPD3DENUMPIXELFORMATSCALLBACK lpEnumCallback, LPVOID lpContext)

@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -396,27 +396,125 @@ HRESULT m_IDirect3DDevice3::GetRenderTarget(LPDIRECTDRAWSURFACE4 * a)
 
 HRESULT m_IDirect3DDevice3::Begin(D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 {
-	return ProxyInterface->Begin(a, b, c);
+	// Phase 2.5: 立即模式 (Begin) 不再透传到 ProxyInterface（nullptr）。
+	// 设计：把 DX6 立即模式转成 D3D9 DrawPrimitiveUP 调用。
+	//   b = vertex format descriptor (D3DVERTEXTYPE 枚举)
+	//   c = flags (D3DDP_*)：当前 D3D9 路径只识别 D3DDP_DONOTLIGHT，其余忽略。
+	// Vertex() 累计顶点数据到 m_immediateVB，End() 一次性 DrawPrimitiveUP 提交。
+	// 注意：DX6 Begin 接口的 vertex format 参数语义是 D3DVERTEXTYPE（枚举：TLVertex/LVertex/...)，
+	// 但实际项目里 DX6 调用方都把 c 当 D3DFVF（float mask）。这里按 FVF 解析。
+	if (m_immediateModeActive)
+	{
+		// 嵌套 Begin：丢弃当前批次，状态机重置。保守策略，避免脏数据污染下一批。
+		m_immediateVB.clear();
+	}
+
+	m_immediateModeActive = true;
+	m_immediatePrimType = a;
+	m_immediateFVF = b;            // 实际是 D3DFVF
+	m_immediateVertexCount = 0;
+	m_immediateStride = D3DXGetFVFVertexSize(b);
+	if (m_immediateStride == 0)
+	{
+		// fallback：用 D3DVERTEX (30 byte) 防 0 除 / 越界
+		m_immediateStride = sizeof(D3DVERTEX);
+	}
+	m_immediateVB.clear();
+	m_immediateVB.reserve(64 * m_immediateStride); // 预留 64 顶点容量，减少 realloc
+
+	if (c & D3DDP_DONOTLIGHT)
+	{
+		auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
+		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+	}
+
+	return D3D_OK;
 }
 
 HRESULT m_IDirect3DDevice3::BeginIndexed(D3DPRIMITIVETYPE a, DWORD b, LPVOID c, DWORD d, DWORD e)
 {
-	return ProxyInterface->BeginIndexed(a, b, c, d, e);
+	// Phase 2.5: 索引立即模式暂不实现。
+	// IDirect3DDevice3::BeginIndexed 是带索引的立即模式，需要同时缓存 index buffer。
+	// 流星蝴蝶剑不会触发该路径（DX6 游戏中也很少用），保留 nullptr ProxyInterface → 段错误的潜在风险。
+	// 临时实现：调用 Begin() 走非索引路径，Index() 暂存，End() 走 DrawIndexedPrimitiveUP。
+	// 这里先 return DDERR_GENERIC，让调用方显式知道不支持；后续按需扩展。
+	logf("m_IDirect3DDevice3::BeginIndexed not implemented yet, returning DDERR_GENERIC");
+	return DDERR_GENERIC;
 }
 
 HRESULT m_IDirect3DDevice3::Vertex(LPVOID a)
 {
-	return ProxyInterface->Vertex(a);
+	// Phase 2.5: 立即模式 Vertex，把顶点数据按 stride 追加到 m_immediateVB。
+	if (!m_immediateModeActive)
+	{
+		// 没有 Begin 就调 Vertex：当作隐式 Begin(TRIANGLELIST) 处理（参考 ddraw compat layer 行为）。
+		Begin(D3DPT_TRIANGLELIST, D3DFVF_VERTEX, 0);
+	}
+	if (!a)
+	{
+		return DDERR_INVALIDPARAMS;
+	}
+
+	size_t oldSize = m_immediateVB.size();
+	m_immediateVB.resize(oldSize + m_immediateStride);
+	memcpy(&m_immediateVB[oldSize], a, m_immediateStride);
+	m_immediateVertexCount += 1;
+	return D3D_OK;
 }
 
 HRESULT m_IDirect3DDevice3::Index(WORD a)
 {
-	return ProxyInterface->Index(a);
+	// Phase 2.5: 索引模式当前未启用，调用应视为 no-op（与 BeginIndexed 配套）。
+	// 调用方若在 BeginIndexed 之前调 Index，是非法时序，但 IDirect3DDevice3 文档允许这种"立即索引化"模式。
+	// 这里返 DD_OK 不报错（DX6 文档语义是 no-op）。
+	return DD_OK;
 }
 
 HRESULT m_IDirect3DDevice3::End(DWORD a)
 {
-	return ProxyInterface->End(a);
+	// Phase 2.5: 立即模式 End，把累计的 m_immediateVB 一次性 DrawPrimitiveUP 提交。
+	HRESULT hr = DDERR_GENERIC;
+	if (!m_immediateModeActive)
+	{
+		// 非法调用：没 Begin 就 End
+		return DDERR_INVALIDPARAMS;
+	}
+	m_immediateModeActive = false;
+
+	if (m_immediateVertexCount == 0 || m_immediateVB.empty())
+	{
+		// 0 顶点：直接返 OK（DX6 语义是 no-op）
+		return D3D_OK;
+	}
+
+	int primitiveCount = 0;
+	GetD3DPrimitiveCount(m_immediateVertexCount, m_immediatePrimType, primitiveCount);
+	if (primitiveCount <= 0)
+	{
+		// 顶点数不足以构成本类型（例：仅 1 顶点 + POINTLIST 之外）
+		return D3D_OK;
+	}
+
+	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
+	if (a & D3DDP_DONOTLIGHT)
+	{
+		device9->SetRenderState(ND3D9::D3DRS_LIGHTING, FALSE);
+		device9->SetRenderState(ND3D9::D3DRS_AMBIENT, 0x00ffffff);
+	}
+	device9->LightEnable(0, false);
+	hr = device9->SetFVF(m_immediateFVF);
+	hr = device9->DrawPrimitiveUP(
+		(ND3D9::D3DPRIMITIVETYPE)m_immediatePrimType,
+		primitiveCount,
+		m_immediateVB.data(),
+		m_immediateStride);
+
+	// 释放本批缓冲，让下一批 Begin 干净起步。
+	m_immediateVB.clear();
+	m_immediateVB.shrink_to_fit();
+	m_immediateVertexCount = 0;
+	return hr;
 }
 
 HRESULT m_IDirect3DDevice3::GetRenderState(D3DRENDERSTATETYPE a, LPDWORD b)

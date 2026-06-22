@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -16,10 +16,15 @@
 
 #include "ddraw.h"
 #include "../D3D9Context.h"
+#include "../Config/ConfigManager.h"
+#include "../Debug/HudRenderer.h"
+#include "../Debug/PerfCounter.h"
 #include "ColorKeyHLSLC.h"
 #include <functional>
 
-const bool g_useSoftwareWrapper9 = false;
+// Phase 3.3: g_useSoftwareWrapper9 已迁移到 ConfigManager::GetRender().useSoftwareBlt
+// 这里仅保留一行调用包装，宏在多个地方使用，避免逐处改写。
+#define USE_SOFTWARE_WRAPPER_9 (NDDFIX::Config::ConfigManager::Instance()->GetRender().useSoftwareBlt)
 
 
 template <bool HAVESRCCOLORKEY, bool HAVEDESTCOLORKEY, bool CHECKDIRTY = false>
@@ -135,6 +140,79 @@ public:
 private:
 	ND3D9::D3D9Context* m_d3d9Context;
 	ND3D9::Resource9Handle m_surface9Handle;
+	ESurfaceType m_surfaceType;
+};
+
+// Phase 2.1: Overlay surface 包装。
+// 设计：D3D9 没有真正的 hardware overlay 概念，DX6/DX7 的 overlay 主要用于 YUV 视频叠加。
+// 流星蝴蝶剑不用 overlay，但某些 DX6 引擎（赛车类、播放器）会先枚举到 overlay 然后放弃。
+// 实现：创一张 RENDERTARGET texture 作为后端，Blt/FillColor/GetDC/ReleaseDC 都返 DDERR_GENERIC
+// （overlay 不支持 D3D 路径的 Blt，调用方应回退到 OffScreen 路径）。
+// 这样不会让 m_surface9Wrapper 为 nullptr 崩，GetSurface9() 也能返一个有效 surface（满足部分查询路径）。
+class Overlay9Wrapper final : public ISurface9Wrapper
+{
+public:
+	Overlay9Wrapper(ND3D9::D3D9Context* d3d9Context, int width, int height, ND3D9::D3DFORMAT format, ESurfaceType surfaceType)
+		: m_d3d9Context(d3d9Context)
+		, m_surfaceType(surfaceType)
+	{
+		assert(m_surfaceType == ESurfaceType::Overlay);
+		// 后端用一张 RENDERTARGET texture 兜底。Overlay 在 D3D9 中没硬件对应，texture 用来满足
+		// GetSurface9() 不为 null 的最小契约；UpdateOverlay/UpdateOverlayDisplay/SetOverlayPosition 等
+		// 真实 overlay 路径仍走 ProxyInterface 透传。
+		m_resource9Handle = m_d3d9Context->CreateTexture9(width, height, 1, ND3D9::D3DUSAGE_RENDERTARGET, format, ND3D9::D3DPOOL_DEFAULT);
+	}
+
+	virtual ~Overlay9Wrapper()
+	{
+		m_d3d9Context->ReleaseResource9(m_resource9Handle);
+	}
+
+	virtual std::string GetImplClassName() const override
+	{
+		return "Overlay9Wrapper";
+	}
+
+	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const override
+	{
+		auto tex9 = m_d3d9Context->GetResource9<ND3D9::IDirect3DTexture9>(m_resource9Handle, nullptr);
+		SmartPtr<ND3D9::IDirect3DSurface9> surface9;
+		if (tex9)
+		{
+			tex9->GetSurfaceLevel(0, &surface9);
+		}
+		return surface9;
+	}
+
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	{
+		// Overlay 不在 D3D Blt 路径中实现，避免误用导致图像撕裂。调用方应回退到 OffScreen。
+		return DDERR_GENERIC;
+	}
+
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	{
+		return DDERR_GENERIC;
+	}
+
+	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) override
+	{
+		return DDERR_GENERIC;
+	}
+
+	virtual HRESULT GetDC(HDC FAR * a)
+	{
+		return DDERR_GENERIC;
+	}
+
+	virtual HRESULT ReleaseDC(HDC a)
+	{
+		return DDERR_GENERIC;
+	}
+
+private:
+	ND3D9::D3D9Context* m_d3d9Context;
+	ND3D9::Resource9Handle m_resource9Handle;
 	ESurfaceType m_surfaceType;
 };
 
@@ -436,8 +514,6 @@ public:
 		, m_isRenderTarget(false)
 		, m_isTex(false)
 		, m_spriteHandle(0)
-		, m_constantTable(nullptr)
-		, m_colorKeyShader(nullptr)
 	{
 		if (surfaceType == ESurfaceType::BackBuffer)
 		{
@@ -468,8 +544,9 @@ public:
 		if (m_isRenderTarget)
 		{
 			m_spriteHandle = m_d3d9Context->CreateSprite();
-			m_d3d9Context->GetDevice()->CreatePixelShader((DWORD*)g_colorKeyHLSLC, &m_colorKeyShader);
-			ND3D9::D3DXGetShaderConstantTable((DWORD*)g_colorKeyHLSLC, &m_constantTable);
+			// Phase 2.3: PS / ConstantTable 不再每个 wrapper 各创一份，改用 D3D9Context 共享。
+			// 这样所有 RenderTarget HardwareSurface9Wrapper 共用同一份 PS 句柄，避免 CreatePixelShader 重复编译。
+			// DrawSprite 中通过 m_d3d9Context->GetSharedColorKeyShader() 实时拿当前有效句柄（Reset 后会自动重建）。
 		}
 	}
 
@@ -517,6 +594,18 @@ public:
 		auto srcTex9 = static_cast<HardwareSurface9Wrapper*>(srcSurface9Wrapper)->GetTexture9();
 		auto device9 = m_d3d9Context->GetDevice();
 
+		// Phase 2.3: 从 D3D9Context 单例取共享 PS / ConstantTable。Reset 后会自动重建。
+		// 之所以用裸指针（不持 SmartPtr），是因为这些资源由 D3D9Context 单例管理生命周期，
+		// Reset 时旧指针置 null 但不 Release（D3D9 内部已清），新指针走 EnsureSharedColorKeyShader 重建。
+		ND3D9::IDirect3DPixelShader9* sharedPS = m_d3d9Context->GetSharedColorKeyShader();
+		ND3D9::ID3DXConstantTable* sharedCT = m_d3d9Context->GetSharedColorKeyConstantTable();
+		if (!sharedPS || !sharedCT)
+		{
+			// 着色器初始化失败，跳过 PS 路径并继续（避免崩溃，但渲染可能异常）
+			logf("HardwareSurface9Wrapper::DrawSprite: shared ColorKey shader not available, skip PS");
+			return;
+		}
+
 		SmartPtr<ND3D9::IDirect3DPixelShader9> oldPixelShader;
 		device9->GetPixelShader(&oldPixelShader);
 
@@ -534,16 +623,19 @@ public:
 		{
 			sprite->Begin(0);
 			{
-				device9->SetPixelShader(m_colorKeyShader);
+				device9->SetPixelShader(sharedPS);
 				ND3D9::D3DXCOLOR srcColorKeyF(srcColorKey ? *srcColorKey : 0);
 				ND3D9::D3DXCOLOR destColorKeyF(destColorKey ? *destColorKey : 0);
 				BOOL haveColorKey[2] = { (bool)srcColorKey, (bool)destColorKey };
 				BOOL checkAlpha = m_surfaceType == ESurfaceType::Primary;
 
-				m_constantTable->SetVector((ND3D9::IDirect3DDevice9*)device9, m_constantTable->GetConstantByName(NULL, "srcColorKey"), &ND3D9::D3DXVECTOR4(srcColorKeyF));
-				// m_constantTable->SetFloatArray((ND3D9::IDirect3DDevice9*)device9, m_constantTable->GetConstantByName(NULL, "destColorKey"), (float*)&destColorKeyF, 1);
-				m_constantTable->SetBoolArray((ND3D9::IDirect3DDevice9*)device9, m_constantTable->GetConstantByName(NULL, "haveColorKey"), haveColorKey, 2);
-				m_constantTable->SetBool((ND3D9::IDirect3DDevice9*)device9, m_constantTable->GetConstantByName(NULL, "checkAlpha"), checkAlpha);
+				sharedCT->SetVector((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "srcColorKey"), &ND3D9::D3DXVECTOR4(srcColorKeyF));
+				// Phase 2.4: 取消注释，让 DDBLT_KEYDEST 真正把 destColorKey 传入 HLSL 常量。
+				// ColorKey.hlsl 中 destColorKey 暂未在 ps_main 里直接引用（pre-existing 状态），
+				// 但 HLSL 端已声明 float4 destColorKey 常量，保留 SetFloatArray 以备后续 dest-color-key 逻辑扩展。
+				sharedCT->SetFloatArray((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "destColorKey"), (float*)&destColorKeyF, 1);
+				sharedCT->SetBoolArray((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "haveColorKey"), haveColorKey, 2);
+				sharedCT->SetBool((ND3D9::IDirect3DDevice9*)device9, sharedCT->GetConstantByName(NULL, "checkAlpha"), checkAlpha);
 
 				device9->SetSamplerState(0, ND3D9::D3DSAMP_MAGFILTER, ND3D9::D3DTEXF_POINT);
 				device9->SetSamplerState(0, ND3D9::D3DSAMP_MINFILTER, ND3D9::D3DTEXF_POINT);
@@ -694,8 +786,7 @@ private:
 	bool m_isTex;
 
 	ND3D9::Resource9Handle m_spriteHandle;
-	SmartPtr<ND3D9::IDirect3DPixelShader9> m_colorKeyShader;
-	SmartPtr<ND3D9::ID3DXConstantTable> m_constantTable;
+	// Phase 2.3: m_colorKeyShader / m_constantTable 已迁移到 D3D9Context 单例共享，不再是 wrapper 成员。
 };
 
 m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDSURFACEDESC2 desc, m_IDirectDrawSurface4* linkedPrevSurface, std::shared_ptr<WrapperLookupTable<void>> wrapperAddressLookupTable)
@@ -762,7 +853,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 
 		bool createInSysMem = m_desc.ddsCaps.dwCaps & DDSCAPS_SYSTEMMEMORY;
 		createInSysMem = true;
-		if (g_useSoftwareWrapper9)
+		if (USE_SOFTWARE_WRAPPER_9)
 		{
 			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
 		}
@@ -787,9 +878,9 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 			{
 				if ((m_desc.dwFlags & DDSD_BACKBUFFERCOUNT) && (m_desc.dwBackBufferCount > 0))
 				{
-					if (!(m_desc.ddsCaps.dwCaps & DDSCAPS_BACKBUFFER))	
+					if (!(m_desc.ddsCaps.dwCaps & DDSCAPS_BACKBUFFER))
 						m_desc.ddsCaps.dwCaps |= DDSCAPS_FRONTBUFFER;
-					if (g_useSoftwareWrapper9)
+					if (USE_SOFTWARE_WRAPPER_9)
 					{
 						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
 					}
@@ -811,7 +902,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 				else if (m_desc.dwFlags & DDSD_BACKBUFFERCOUNT)
 				{
 					m_surfaceType = ESurfaceType::BackBuffer;
-					if (g_useSoftwareWrapper9)
+					if (USE_SOFTWARE_WRAPPER_9)
 					{
 						m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
 					}
@@ -828,7 +919,7 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		}
 		else
 		{
-			if (g_useSoftwareWrapper9)
+			if (USE_SOFTWARE_WRAPPER_9)
 			{
 				m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
 			}
@@ -874,9 +965,47 @@ m_IDirectDrawSurface4::m_IDirectDrawSurface4(IDirectDrawSurface4 *aOriginal, DDS
 		break;
 	}
 	case ESurfaceType::Overlay:
+	{
+		// Phase 2.1: Overlay 不再走 nullptr 路径。
+		// 用 Overlay9Wrapper 兜底：Blt/FillColor/GetDC/ReleaseDC 返 DDERR_GENERIC，但 GetSurface9() 返有效 surface。
+		// 真实 UpdateOverlay/SetOverlayPosition 仍由 m_IDirectDrawSurface4::UpdateOverlay 透传到 ProxyInterface。
+		if (m_desc.dwWidth == 0 || m_desc.dwHeight == 0)
+		{
+			// 防呆：调用方没填宽高时用 BackBuffer 尺寸（与 BackBuffer/ZBuffer 路径一致）
+			int width = 0;
+			int height = 0;
+			ND3D9::D3D9Context::Instance()->GetBackBufferSize(&width, &height);
+			m_desc.dwWidth = width;
+			m_desc.dwHeight = height;
+		}
+		m_surface9Wrapper = new Overlay9Wrapper(
+			ND3D9::D3D9Context::Instance(),
+			m_desc.dwWidth,
+			m_desc.dwHeight,
+			ND3D9::D3DFMT_A8R8G8B8,
+			m_surfaceType);
 		break;
+	}
 	case ESurfaceType::BackBuffer:
+	{
+		// P0 修复: 原来直接 break，导致 m_surface9Wrapper = nullptr，游戏单独建 BackBuffer 时 GetSurface9()/Blt 全崩。
+		// 改为自建 HardwareSurface9Wrapper，与 Primary 链上 BackBuffer 一致。
+		int width = 0;
+		int height = 0;
+		ND3D9::D3D9Context::Instance()->GetBackBufferSize(&width, &height);
+		m_desc.dwWidth = width;
+		m_desc.dwHeight = height;
+		if (USE_SOFTWARE_WRAPPER_9)
+		{
+			m_surface9Wrapper = new SoftwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType);
+		}
+		else
+		{
+			m_surface9Wrapper = new HardwareSurface9Wrapper(ND3D9::D3D9Context::Instance(), m_desc.dwWidth, m_desc.dwHeight, ND3D9::D3DFMT_A8R8G8B8, m_surfaceType, &m_desc);
+			// HardwareSurface9Wrapper 构造里已经为 BackBuffer 设置 m_isRenderTarget = true、m_isTex = true。
+		}
 		break;
+	}
 	case ESurfaceType::ZBuffer:
 	{
 		int width = 0;
@@ -1001,6 +1130,18 @@ HRESULT m_IDirectDrawSurface4::AddOverlayDirtyRect(LPRECT a)
 
 HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDSrcSurface, LPRECT lpSrcRect, DWORD dwFlags, LPDDBLTFX lpDDBltFx)
 {
+	// Phase 4.3: 性能埋点（函数入口 RAII 计数 + 累计耗时）
+	PERF_SCOPE("Blt");
+	// 区分 Blt / BltFast / FillColor / Flip 四类计数（每秒滑动平均由 HUD 展示）
+	if (dwFlags & DDBLT_COLORFILL)
+	{
+		NDDFIX::Debug::PerfCounter::Instance()->IncrementFillColor();
+	}
+	else
+	{
+		NDDFIX::Debug::PerfCounter::Instance()->IncrementBlt();
+	}
+
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 
 	if (!(dwFlags & DDBLT_COLORFILL) && !lpDDSrcSurface)
@@ -1119,9 +1260,31 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 		destColorKey = &lpDDBltFx->ddckDestColorkey.dwColorSpaceLowValue;
 	}
 
-	if (((dwFlags & DDBLT_ALPHASRC) || (dwFlags & DDBLT_ALPHADEST)))
+	// Phase 2.2: DDBLT_ALPHASRC / DDBLT_ALPHADEST 路径不再 assert(false)。
+	// D3D9 路径：用 SetRenderState(ALPHABLENDENABLE, TRUE) + SRCBLEND/DESTBLEND 模拟 alpha 混合。
+	// 语义映射：
+	//   DDBLT_ALPHASRC  → SRCBLEND = SRCALPHA, DESTBLEND = INVSRCALPHA（按源 alpha 混合）
+	//   DDBLT_ALPHADEST → DESTBLEND = DESTALPHA, SRCBLEND = INVDESTALPHA（按目标 alpha 混合）
+	//   两者都开时按 SRCALPHA 处理（DDBLT_ALPHASRC 优先，因 IDirectDrawSurface::GetCaps 文档约定）。
+	// 备注：这里只设 render state；具体混合效果由后续 PS 决定。当前 D3D9 PS 是 ColorKey 路径，
+	// alpha 状态会在 ColorKey 之外再叠加一层 blend。fallback 走默认 One/One 也比直接 assert 崩好。
+	if ((dwFlags & DDBLT_ALPHASRC) && (dwFlags & DDBLT_ALPHADEST))
 	{
-		assert(false);
+		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_SRCALPHA);
+		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVSRCALPHA);
+	}
+	else if (dwFlags & DDBLT_ALPHASRC)
+	{
+		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_SRCALPHA);
+		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVSRCALPHA);
+	}
+	else if (dwFlags & DDBLT_ALPHADEST)
+	{
+		device9->SetRenderState(ND3D9::D3DRS_ALPHABLENDENABLE, TRUE);
+		device9->SetRenderState(ND3D9::D3DRS_SRCBLEND, ND3D9::D3DBLEND_DESTALPHA);
+		device9->SetRenderState(ND3D9::D3DRS_DESTBLEND, ND3D9::D3DBLEND_INVDESTALPHA);
 	}
 
 	m_surface9Wrapper->Blt(srcSurface->m_surface9Wrapper, &srcRectOverride, &destRectOverride, srcColorKey, destColorKey);
@@ -1137,6 +1300,10 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 		{
 			srcSurface->m_surface9Wrapper->FillColor(&srcRectOverride, 0);
 		}
+
+		// Phase 4.2: HUD 渲染（在 Present 之后叠加显示）。设备丢失/未启用 → 内部 no-op。
+		NDDFIX::Debug::PerfCounter::Instance()->IncrementRender();
+		NDDFIX::Debug::HudRenderer::Instance()->Render();
 	}
 	return DD_OK;
 }
@@ -1153,6 +1320,10 @@ HRESULT m_IDirectDrawSurface4::BltBatch(LPDDBLTBATCH a, DWORD b, DWORD c)
 
 HRESULT m_IDirectDrawSurface4::BltFast(DWORD dwX, DWORD dwY, LPDIRECTDRAWSURFACE4 lpDDSrcSurface, LPRECT lpSrcRect, DWORD dwFlags)
 {
+	// Phase 4.3: 性能埋点 + BltFast 计数
+	PERF_SCOPE("BltFast");
+	NDDFIX::Debug::PerfCounter::Instance()->IncrementBltFast();
+
 	if (!lpDDSrcSurface || !lpSrcRect)
 	{
 		return DDERR_INVALIDPARAMS;
@@ -1174,14 +1345,21 @@ HRESULT m_IDirectDrawSurface4::BltFast(DWORD dwX, DWORD dwY, LPDIRECTDRAWSURFACE
 		{
 			destColorKey = &destSurface->m_desc.ddckCKDestBlt.dwColorSpaceLowValue;
 		}
-		
+
 		HRESULT hr = m_surface9Wrapper->BltFast(srcSurface->m_surface9Wrapper, lpSrcRect, dwX, dwY, srcColorKey, destColorKey);
 
 		return hr;
 	}
-	else
+	else if (m_surfaceType == ESurfaceType::Primary)
 	{
-		assert(false);
+		// P0 修复: 原来 Primary 路径直接 assert(false)。
+		// 改为内部 redirect 到 Blt：构造 destRect = {dwX, dwY, dwX+w, dwY+h} 后调 Blt，保留 ColorKey / 视口等原有路径。
+		RECT destRect = { 0 };
+		destRect.left = (LONG)dwX;
+		destRect.top = (LONG)dwY;
+		destRect.right = destRect.left + (lpSrcRect->right - lpSrcRect->left);
+		destRect.bottom = destRect.top + (lpSrcRect->bottom - lpSrcRect->top);
+		return Blt(&destRect, lpDDSrcSurface, lpSrcRect, dwFlags, nullptr);
 	}
 	return DDERR_GENERIC;
 }
@@ -1216,12 +1394,32 @@ HRESULT m_IDirectDrawSurface4::EnumOverlayZOrders(DWORD a, LPVOID b, LPDDENUMSUR
 
 HRESULT m_IDirectDrawSurface4::Flip(LPDIRECTDRAWSURFACE4 a, DWORD b)
 {
-	if (a)
+	// P0 修复: 不再访问 ProxyInterface（nullptr），改用 D3D9 Present。
+	// 仿照 m_IDirectDrawSurface4::Blt (Primary 路径) 与 HardwareSurface9Wrapper::DrawSprite。
+	// Phase 4.3: 性能埋点 + Flip 计数
+	PERF_SCOPE("Flip");
+	NDDFIX::Debug::PerfCounter::Instance()->IncrementFlip();
+
+	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
+
+	// 翻页链中 backbuffer 是 m_linkedNextSurface，把它设为当前 RenderTarget。
+	if (m_linkedNextSurface && m_linkedNextSurface->m_surface9Wrapper)
 	{
-		a = static_cast<m_IDirectDrawSurface4 *>(a)->GetProxyInterface();
+		device9->SetRenderTarget(0, m_linkedNextSurface->GetSurface9());
 	}
 
-	return ProxyInterface->Flip(a, b);
+	// D9 Present: 把后台缓冲提交到屏幕。
+	if (D3DERR_DEVICELOST == device9->Present(nullptr, nullptr, 0, nullptr))
+	{
+		ND3D9::D3D9Context::Instance()->TagDeviceLost();
+		return DDERR_SURFACELOST;
+	}
+
+	// Phase 4.2: HUD 渲染（在 Present 之后叠加显示）。设备丢失/未启用 → 内部 no-op。
+	NDDFIX::Debug::PerfCounter::Instance()->IncrementRender();
+	NDDFIX::Debug::HudRenderer::Instance()->Render();
+
+	return DD_OK;
 }
 
 HRESULT m_IDirectDrawSurface4::GetAttachedSurface(LPDDSCAPS2 a, LPDIRECTDRAWSURFACE4 FAR * b)
@@ -1430,9 +1628,10 @@ HRESULT m_IDirectDrawSurface4::Lock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurf
 
 	if (m_surfaceType == ESurfaceType::OffScreen)
 	{
-		// trick for mateor blade
-		// 这里不Lock似乎对游戏没坏处
-		if (m_desc.ddsCaps.dwCaps == (DDSCAPS_3DDEVICE | DDSCAPS_OFFSCREENPLAIN))
+		// Phase 3.3: Allow3DOffScreenLock 决定 3D OffScreen Lock 行为
+		// 默认 false = 保持原"trick for meteor blade"行为（返 DDERR_INVALIDPARAMS）
+		if (m_desc.ddsCaps.dwCaps == (DDSCAPS_3DDEVICE | DDSCAPS_OFFSCREENPLAIN)
+			&& !NDDFIX::Config::ConfigManager::Instance()->GetRender().allow3DOffScreenLock)
 		{
 			hr = DDERR_INVALIDPARAMS;
 		}
@@ -1493,9 +1692,9 @@ HRESULT m_IDirectDrawSurface4::Lock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurf
 	}
 	else if (m_surfaceType == ESurfaceType::BackBuffer)
 	{
-		// trick for mateor blade
-		// 这里不Lock似乎对游戏没坏处
-		if (true)
+		// Phase 3.3: AllowBackBufferLock 决定 BackBuffer Lock 行为
+		// 默认 false = 保持原"trick for meteor blade"行为（永远返 DDERR_GENERIC）
+		if (!NDDFIX::Config::ConfigManager::Instance()->GetRender().allowBackBufferLock)
 		{
 			hr = DDERR_GENERIC;
 		}
@@ -1552,8 +1751,12 @@ HRESULT m_IDirectDrawSurface4::Restore()
 	{
 		auto zbuffer9 = GetSurface9();
 		ND3D9::D3D9Context::Instance()->GetDevice()->SetDepthStencilSurface(zbuffer9);
-		// trick for game meteor blade
-		ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_ZENABLE, TRUE);
+		// Phase 3.3: ZBufferAutoRestore 决定是否在 Restore 时开 Z
+		// 默认 true = 保持原"trick for game meteor blade"行为
+		if (NDDFIX::Config::ConfigManager::Instance()->GetRender().zBufferAutoRestore)
+		{
+			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState(ND3D9::D3DRS_ZENABLE, TRUE);
+		}
 		return DD_OK;
 	}
 	else
