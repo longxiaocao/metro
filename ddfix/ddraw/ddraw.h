@@ -2,6 +2,21 @@
 
 #define INITGUID
 
+// Phase 8.25.5: 必须在 d3d9types.h 之前**全局**先 include windows.h。
+//
+// 根因 (CI #33 新错误):
+//   wine_d3dtypes.h 内部 line 28 有 `#include <windows.h>`, 把 windows.h 的所有
+//   typedef (LONG, DWORD, HWND, BOOL, BYTE, WORD, INT, UINT 等) 在 namespace dx6
+//   块内被 include, 导致这些基础类型进入 namespace dx6 (而非全局)。
+//   之后 d3d9types.h (在 ddraw.h line 40 已全局 include) 在 typedef 块
+//   (line 76 D3DRECT 中 `LONG x1, y1, x2, y2;`) 引用 LONG, 编译器找不到
+//   全局 LONG, 报 `x1: unknown override specifier` (C3646) 和
+//   `D3DCOLOR: missing ';'` (C2146) 错误。
+//
+// 解决: 在 ddraw.h 最顶部 include <windows.h>, 让 wine_d3dtypes.h 内部的
+//   `<windows.h>` 被头保护跳过, windows.h 的所有 typedef 始终在全局可见。
+#include <windows.h>
+
 // Phase 8.25: 用项目内 Wine d3d.h / d3dtypes.h / d3dcaps.h 替代 Windows SDK d3d.h。
 //
 // 原因 (Phase 8.22 ~ 8.24 失败根因):
