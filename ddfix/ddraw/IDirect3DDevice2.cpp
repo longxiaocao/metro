@@ -115,7 +115,7 @@ HRESULT m_IDirect3DDevice2::NextViewport(dx6::LPDIRECT3DVIEWPORT2 a, dx6::LPDIRE
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice2::EnumTextureFormats(LPD3DENUMTEXTUREFORMATSCALLBACK a, LPVOID b)
+HRESULT m_IDirect3DDevice2::EnumTextureFormats(dx6::LPD3DENUMTEXTUREFORMATSCALLBACK a, LPVOID b)
 {
 	return ProxyInterface->EnumTextureFormats(a, b);
 }

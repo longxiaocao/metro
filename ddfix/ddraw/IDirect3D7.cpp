@@ -54,7 +54,7 @@ ULONG m_IDirect3D7::Release()
 	return x;
 }
 
-HRESULT m_IDirect3D7::EnumDevices(LPD3DENUMDEVICESCALLBACK7 a, LPVOID b)
+HRESULT m_IDirect3D7::EnumDevices(dx6::LPD3DENUMDEVICESCALLBACK7 a, LPVOID b)
 {
 	return ProxyInterface->EnumDevices(a, b);
 }

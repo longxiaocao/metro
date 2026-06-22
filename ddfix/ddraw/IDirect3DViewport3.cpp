@@ -103,12 +103,12 @@ HRESULT m_IDirect3DViewport3::LightElements(DWORD a, dx6::LPD3DLIGHTDATA b)
 	return ProxyInterface->LightElements(a, b);
 }
 
-HRESULT m_IDirect3DViewport3::SetBackground(D3DMATERIALHANDLE a)
+HRESULT m_IDirect3DViewport3::SetBackground(dx6::D3DMATERIALHANDLE a)
 {
 	return ProxyInterface->SetBackground(a);
 }
 
-HRESULT m_IDirect3DViewport3::GetBackground(LPD3DMATERIALHANDLE a, LPBOOL b)
+HRESULT m_IDirect3DViewport3::GetBackground(dx6::LPD3DMATERIALHANDLE a, LPBOOL b)
 {
 	return ProxyInterface->GetBackground(a, b);
 }
@@ -135,7 +135,7 @@ HRESULT m_IDirect3DViewport3::GetBackgroundDepth(LPDIRECTDRAWSURFACE * a, LPBOOL
 	return hr;
 }
 
-HRESULT m_IDirect3DViewport3::Clear(DWORD a, LPD3DRECT b, DWORD c)
+HRESULT m_IDirect3DViewport3::Clear(DWORD a, dx6::LPD3DRECT b, DWORD c)
 {
 	return ProxyInterface->Clear(a, b, c);
 }
@@ -293,7 +293,7 @@ HRESULT m_IDirect3DViewport3::GetBackgroundDepth2(LPDIRECTDRAWSURFACE4 * a, LPBO
 	return DDERR_GENERIC;
 }
 
-HRESULT m_IDirect3DViewport3::Clear2(DWORD dwCount, LPD3DRECT lpRects, DWORD dwFlags, DWORD dwColor, dx6::D3DVALUE dvZ, DWORD dwStencil)
+HRESULT m_IDirect3DViewport3::Clear2(DWORD dwCount, dx6::LPD3DRECT lpRects, DWORD dwFlags, DWORD dwColor, dx6::D3DVALUE dvZ, DWORD dwStencil)
 {
 	ND3D9::D3D9Context::Instance()->GetDevice()->Clear(dwCount, lpRects, dwFlags, dwColor, dvZ, dwStencil);
 	return DD_OK;

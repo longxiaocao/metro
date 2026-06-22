@@ -83,7 +83,7 @@ HRESULT m_IDirect3DDevice::SwapTextureHandles(dx6::LPDIRECT3DTEXTURE a, dx6::LPD
 	return ProxyInterface->SwapTextureHandles(a, b);
 }
 
-HRESULT m_IDirect3DDevice::CreateExecuteBuffer(LPD3DEXECUTEBUFFERDESC a, dx6::LPDIRECT3DEXECUTEBUFFER * b, IUnknown * c)
+HRESULT m_IDirect3DDevice::CreateExecuteBuffer(dx6::LPD3DEXECUTEBUFFERDESC a, dx6::LPDIRECT3DEXECUTEBUFFER * b, IUnknown * c)
 {
 	HRESULT hr = ProxyInterface->CreateExecuteBuffer(a, b, c);
 
@@ -151,7 +151,7 @@ HRESULT m_IDirect3DDevice::NextViewport(dx6::LPDIRECT3DVIEWPORT a, dx6::LPDIRECT
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice::Pick(dx6::LPDIRECT3DEXECUTEBUFFER a, dx6::LPDIRECT3DVIEWPORT b, DWORD c, LPD3DRECT d)
+HRESULT m_IDirect3DDevice::Pick(dx6::LPDIRECT3DEXECUTEBUFFER a, dx6::LPDIRECT3DVIEWPORT b, DWORD c, dx6::LPD3DRECT d)
 {
 	if (a)
 	{
@@ -165,32 +165,32 @@ HRESULT m_IDirect3DDevice::Pick(dx6::LPDIRECT3DEXECUTEBUFFER a, dx6::LPDIRECT3DV
 	return ProxyInterface->Pick(a, b, c, d);
 }
 
-HRESULT m_IDirect3DDevice::GetPickRecords(LPDWORD a, LPD3DPICKRECORD b)
+HRESULT m_IDirect3DDevice::GetPickRecords(LPDWORD a, dx6::LPD3DPICKRECORD b)
 {
 	return ProxyInterface->GetPickRecords(a, b);
 }
 
-HRESULT m_IDirect3DDevice::EnumTextureFormats(LPD3DENUMTEXTUREFORMATSCALLBACK a, LPVOID b)
+HRESULT m_IDirect3DDevice::EnumTextureFormats(dx6::LPD3DENUMTEXTUREFORMATSCALLBACK a, LPVOID b)
 {
 	return ProxyInterface->EnumTextureFormats(a, b);
 }
 
-HRESULT m_IDirect3DDevice::CreateMatrix(LPD3DMATRIXHANDLE a)
+HRESULT m_IDirect3DDevice::CreateMatrix(dx6::LPD3DMATRIXHANDLE a)
 {
 	return ProxyInterface->CreateMatrix(a);
 }
 
-HRESULT m_IDirect3DDevice::SetMatrix(D3DMATRIXHANDLE a, const dx6::LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice::SetMatrix(dx6::D3DMATRIXHANDLE a, const dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->SetMatrix(a, b);
 }
 
-HRESULT m_IDirect3DDevice::GetMatrix(D3DMATRIXHANDLE a, dx6::LPD3DMATRIX b)
+HRESULT m_IDirect3DDevice::GetMatrix(dx6::D3DMATRIXHANDLE a, dx6::LPD3DMATRIX b)
 {
 	return ProxyInterface->GetMatrix(a, b);
 }
 
-HRESULT m_IDirect3DDevice::DeleteMatrix(D3DMATRIXHANDLE a)
+HRESULT m_IDirect3DDevice::DeleteMatrix(dx6::D3DMATRIXHANDLE a)
 {
 	return ProxyInterface->DeleteMatrix(a);
 }

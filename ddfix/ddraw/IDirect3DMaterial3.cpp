@@ -86,7 +86,7 @@ HRESULT m_IDirect3DMaterial3::GetMaterial(dx6::LPD3DMATERIAL a)
 	return DD_OK;
 }
 
-HRESULT m_IDirect3DMaterial3::GetHandle(dx6::LPDIRECT3DDEVICE3 a, LPD3DMATERIALHANDLE b)
+HRESULT m_IDirect3DMaterial3::GetHandle(dx6::LPDIRECT3DDEVICE3 a, dx6::LPD3DMATERIALHANDLE b)
 {
 	// 存储this指针
 	*b = (DWORD)this;

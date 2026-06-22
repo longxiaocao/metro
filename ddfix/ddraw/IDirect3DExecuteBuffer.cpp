@@ -54,7 +54,7 @@ ULONG m_IDirect3DExecuteBuffer::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DExecuteBuffer::Initialize(dx6::LPDIRECT3DDEVICE a, LPD3DEXECUTEBUFFERDESC b)
+HRESULT m_IDirect3DExecuteBuffer::Initialize(dx6::LPDIRECT3DDEVICE a, dx6::LPD3DEXECUTEBUFFERDESC b)
 {
 	if (a)
 	{
@@ -64,7 +64,7 @@ HRESULT m_IDirect3DExecuteBuffer::Initialize(dx6::LPDIRECT3DDEVICE a, LPD3DEXECU
 	return ProxyInterface->Initialize(a, b);
 }
 
-HRESULT m_IDirect3DExecuteBuffer::Lock(LPD3DEXECUTEBUFFERDESC a)
+HRESULT m_IDirect3DExecuteBuffer::Lock(dx6::LPD3DEXECUTEBUFFERDESC a)
 {
 	return ProxyInterface->Lock(a);
 }
@@ -74,12 +74,12 @@ HRESULT m_IDirect3DExecuteBuffer::Unlock()
 	return ProxyInterface->Unlock();
 }
 
-HRESULT m_IDirect3DExecuteBuffer::SetExecuteData(LPD3DEXECUTEDATA a)
+HRESULT m_IDirect3DExecuteBuffer::SetExecuteData(dx6::LPD3DEXECUTEDATA a)
 {
 	return ProxyInterface->SetExecuteData(a);
 }
 
-HRESULT m_IDirect3DExecuteBuffer::GetExecuteData(LPD3DEXECUTEDATA a)
+HRESULT m_IDirect3DExecuteBuffer::GetExecuteData(dx6::LPD3DEXECUTEDATA a)
 {
 	return ProxyInterface->GetExecuteData(a);
 }

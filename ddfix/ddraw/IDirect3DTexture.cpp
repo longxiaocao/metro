@@ -101,7 +101,7 @@ HRESULT m_IDirect3DTexture::Initialize(dx6::LPDIRECT3DDEVICE a, LPDIRECTDRAWSURF
 	return ProxyInterface->Initialize(a, b);
 }
 
-HRESULT m_IDirect3DTexture::GetHandle(dx6::LPDIRECT3DDEVICE a, LPD3DTEXTUREHANDLE b)
+HRESULT m_IDirect3DTexture::GetHandle(dx6::LPDIRECT3DDEVICE a, dx6::LPD3DTEXTUREHANDLE b)
 {
 	if (a)
 	{

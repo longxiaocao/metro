@@ -54,7 +54,7 @@ ULONG m_IDirect3DDevice7::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DDevice7::GetCaps(LPD3DDEVICEDESC7 a)
+HRESULT m_IDirect3DDevice7::GetCaps(dx6::LPD3DDEVICEDESC7 a)
 {
 	return ProxyInterface->GetCaps(a);
 }
@@ -108,7 +108,7 @@ HRESULT m_IDirect3DDevice7::GetRenderTarget(LPDIRECTDRAWSURFACE7 * a)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice7::Clear(DWORD a, LPD3DRECT b, DWORD c, D3DCOLOR d, dx6::D3DVALUE e, DWORD f)
+HRESULT m_IDirect3DDevice7::Clear(DWORD a, dx6::LPD3DRECT b, DWORD c, dx6::D3DCOLOR d, dx6::D3DVALUE e, DWORD f)
 {
 	return ProxyInterface->Clear(a, b, c, d, e, f);
 }
@@ -123,7 +123,7 @@ HRESULT m_IDirect3DDevice7::GetTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6::LPD3
 	return ProxyInterface->GetTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice7::SetViewport(LPD3DVIEWPORT7 a)
+HRESULT m_IDirect3DDevice7::SetViewport(dx6::LPD3DVIEWPORT7 a)
 {
 	return ProxyInterface->SetViewport(a);
 }
@@ -133,27 +133,27 @@ HRESULT m_IDirect3DDevice7::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6:
 	return ProxyInterface->MultiplyTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice7::GetViewport(LPD3DVIEWPORT7 a)
+HRESULT m_IDirect3DDevice7::GetViewport(dx6::LPD3DVIEWPORT7 a)
 {
 	return ProxyInterface->GetViewport(a);
 }
 
-HRESULT m_IDirect3DDevice7::SetMaterial(LPD3DMATERIAL7 a)
+HRESULT m_IDirect3DDevice7::SetMaterial(dx6::LPD3DMATERIAL7 a)
 {
 	return ProxyInterface->SetMaterial(a);
 }
 
-HRESULT m_IDirect3DDevice7::GetMaterial(LPD3DMATERIAL7 a)
+HRESULT m_IDirect3DDevice7::GetMaterial(dx6::LPD3DMATERIAL7 a)
 {
 	return ProxyInterface->GetMaterial(a);
 }
 
-HRESULT m_IDirect3DDevice7::SetLight(DWORD a, LPD3DLIGHT7 b)
+HRESULT m_IDirect3DDevice7::SetLight(DWORD a, dx6::LPD3DLIGHT7 b)
 {
 	return ProxyInterface->SetLight(a, b);
 }
 
-HRESULT m_IDirect3DDevice7::GetLight(DWORD a, LPD3DLIGHT7 b)
+HRESULT m_IDirect3DDevice7::GetLight(DWORD a, dx6::LPD3DLIGHT7 b)
 {
 	return ProxyInterface->GetLight(a, b);
 }

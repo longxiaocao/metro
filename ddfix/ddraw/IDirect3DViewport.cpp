@@ -84,12 +84,12 @@ HRESULT m_IDirect3DViewport::LightElements(DWORD a, dx6::LPD3DLIGHTDATA b)
 	return ProxyInterface->LightElements(a, b);
 }
 
-HRESULT m_IDirect3DViewport::SetBackground(D3DMATERIALHANDLE a)
+HRESULT m_IDirect3DViewport::SetBackground(dx6::D3DMATERIALHANDLE a)
 {
 	return ProxyInterface->SetBackground(a);
 }
 
-HRESULT m_IDirect3DViewport::GetBackground(LPD3DMATERIALHANDLE a, LPBOOL b)
+HRESULT m_IDirect3DViewport::GetBackground(dx6::LPD3DMATERIALHANDLE a, LPBOOL b)
 {
 	return ProxyInterface->GetBackground(a, b);
 }
@@ -116,7 +116,7 @@ HRESULT m_IDirect3DViewport::GetBackgroundDepth(LPDIRECTDRAWSURFACE * a, LPBOOL 
 	return hr;
 }
 
-HRESULT m_IDirect3DViewport::Clear(DWORD a, LPD3DRECT b, DWORD c)
+HRESULT m_IDirect3DViewport::Clear(DWORD a, dx6::LPD3DRECT b, DWORD c)
 {
 	return ProxyInterface->Clear(a, b, c);
 }

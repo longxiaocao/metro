@@ -28,7 +28,7 @@
 
 
 template <bool HAVESRCCOLORKEY, bool HAVEDESTCOLORKEY, bool CHECKDIRTY = false>
-static void LineProcess(D3DCOLOR* srcLine, D3DCOLOR* destLine, int width, DWORD srcColorKey, DWORD destColorKey)
+static void LineProcess(dx6::D3DCOLOR* srcLine, dx6::D3DCOLOR* destLine, int width, DWORD srcColorKey, DWORD destColorKey)
 {
 	for (int x = 0; x < width; x++)
 	{
@@ -80,9 +80,9 @@ struct ISurface9Wrapper
 {
 	virtual ~ISurface9Wrapper() = default;
 	virtual SmartPtr<ND3D9::IDirect3DSurface9> GetSurface9() const = 0;
-	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) = 0;
-	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) = 0;
-	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) = 0;
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) = 0;
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) = 0;
+	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) = 0;
 	virtual HRESULT GetDC(HDC FAR * a) = 0;
 	virtual HRESULT ReleaseDC(HDC a) = 0;
 	virtual std::string GetImplClassName() const = 0;
@@ -114,16 +114,16 @@ public:
 		return m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_surface9Handle, nullptr);
 	}
 
-	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		return DDERR_GENERIC;
 	}
-	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		return DDERR_GENERIC;
 	}
 
-	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) override
+	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) override
 	{
 		return DDERR_GENERIC;
 	}
@@ -184,18 +184,18 @@ public:
 		return surface9;
 	}
 
-	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		// Overlay 不在 D3D Blt 路径中实现，避免误用导致图像撕裂。调用方应回退到 OffScreen。
 		return DDERR_GENERIC;
 	}
 
-	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		return DDERR_GENERIC;
 	}
 
-	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) override
+	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) override
 	{
 		return DDERR_GENERIC;
 	}
@@ -240,7 +240,7 @@ public:
 			m_surface9Handle = m_d3d9Context->GetBackBuffer9();
 		}
 
-		m_srcSampled = new D3DCOLOR[width * height];
+		m_srcSampled = new dx6::D3DCOLOR[width * height];
 		m_sampleTableHorizon = new int[width];
 		m_sampleTableVertical = new int[height];
 	}
@@ -273,14 +273,14 @@ public:
 		return m_d3d9Context->GetResource9<ND3D9::IDirect3DSurface9>(m_surface9Handle, nullptr);
 	}
 
-	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		HRESULT hr = DDERR_GENERIC;
 
 		assert(srcSurface9Wrapper->GetImplClassName() == this->GetImplClassName());
 		auto srcSurface9 = srcSurface9Wrapper->GetSurface9();
 
-		std::function<void(D3DCOLOR* srcLine, D3DCOLOR* destLine, int x)> lineCallBack;
+		std::function<void(dx6::D3DCOLOR* srcLine, dx6::D3DCOLOR* destLine, int x)> lineCallBack;
 
 		using namespace std::placeholders;
 		if (m_surfaceType == ESurfaceType::Primary)
@@ -347,17 +347,17 @@ public:
 			ND3D9::D3DLOCKED_RECT srcLockedRect;
 			if (SUCCEEDED(hr = srcSurface9->LockRect(&srcLockedRect, lpSrcRect, D3DLOCK_READONLY)))
 			{
-				int destPitch = destWidth * sizeof(D3DCOLOR);
+				int destPitch = destWidth * sizeof(dx6::D3DCOLOR);
 				char* srcBits = (char*)srcLockedRect.pBits;
 				char* destBits = (char*)m_srcSampled;
 				for (int y = 0; y < destHeight; y++)
 				{
-					D3DCOLOR* srcLineStart = (D3DCOLOR*)srcBits;
-					D3DCOLOR* destLineStart = (D3DCOLOR*)destBits;
+					dx6::D3DCOLOR* srcLineStart = (dx6::D3DCOLOR*)srcBits;
+					dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destBits;
 					for (int x = 0; x < destWidth; x++)
 					{
-						D3DCOLOR srcPixel = srcLineStart[m_sampleTableHorizon[x]];
-						D3DCOLOR& destPixel = destLineStart[x];
+						dx6::D3DCOLOR srcPixel = srcLineStart[m_sampleTableHorizon[x]];
+						dx6::D3DCOLOR& destPixel = destLineStart[x];
 
 						destPixel = srcPixel;
 					}
@@ -371,13 +371,13 @@ public:
 		ND3D9::D3DLOCKED_RECT destLockedRect;
 		if (SUCCEEDED(hr = destSurface9->LockRect(&destLockedRect, lpDestRect, 0)))
 		{
-			int srcPitch = destWidth * sizeof(D3DCOLOR);
+			int srcPitch = destWidth * sizeof(dx6::D3DCOLOR);
 			char* srcBits = (char*)m_srcSampled;
 			char* destBits = (char*)destLockedRect.pBits;
 			for (int y = 0; y < destHeight; y++)
 			{
-				D3DCOLOR* srcLineStart = (D3DCOLOR*)srcBits;
-				D3DCOLOR* destLineStart = (D3DCOLOR*)destBits;
+				dx6::D3DCOLOR* srcLineStart = (dx6::D3DCOLOR*)srcBits;
+				dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destBits;
 				lineCallBack(srcLineStart, destLineStart, destWidth);
 				srcBits = (char*)srcBits + srcPitch;
 				destBits = (char*)destBits + destLockedRect.Pitch;
@@ -387,14 +387,14 @@ public:
 
 		return hr;
 	}
-	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		HRESULT hr = DDERR_GENERIC;
 
 		assert(srcSurface9Wrapper->GetImplClassName() == this->GetImplClassName());
 		auto srcSurface9 = srcSurface9Wrapper->GetSurface9();
 
-		std::function<void(D3DCOLOR* srcLine, D3DCOLOR* destLine, int x)> lineCallBack;
+		std::function<void(dx6::D3DCOLOR* srcLine, dx6::D3DCOLOR* destLine, int x)> lineCallBack;
 
 		using namespace std::placeholders;
 
@@ -436,8 +436,8 @@ public:
 				char* destBits = (char*)destLockedRect.pBits;
 				for (int y = 0; y < height; y++)
 				{
-					D3DCOLOR* srcLineStart = (D3DCOLOR*)srcBits;
-					D3DCOLOR* destLineStart = (D3DCOLOR*)destBits;
+					dx6::D3DCOLOR* srcLineStart = (dx6::D3DCOLOR*)srcBits;
+					dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destBits;
 					lineCallBack(srcLineStart, destLineStart, width);
 					srcBits += srcLockedRect.Pitch;
 					destBits += destLockedRect.Pitch;
@@ -453,7 +453,7 @@ public:
 		return hr;
 	}
 
-	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) override
+	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) override
 	{
 		HRESULT hr = DDERR_GENERIC;
 		auto surface9 = GetSurface9();
@@ -466,10 +466,10 @@ public:
 			char* destBits = (char*)destLockedRect.pBits;
 			for (int y = 0; y < destHeight; y++)
 			{
-				D3DCOLOR* destLineStart = (D3DCOLOR*)destBits;
+				dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destBits;
 				for (int x = 0; x < destWidth; x++)
 				{
-					D3DCOLOR& destPixel = destLineStart[x];
+					dx6::D3DCOLOR& destPixel = destLineStart[x];
 
 					destPixel = color;
 				}
@@ -497,7 +497,7 @@ private:
 	ND3D9::Resource9Handle m_surface9Handle;
 	ESurfaceType m_surfaceType;
 
-	D3DCOLOR* m_srcSampled;
+	dx6::D3DCOLOR* m_srcSampled;
 	int* m_sampleTableHorizon;
 	int* m_sampleTableVertical;
 
@@ -577,7 +577,7 @@ public:
 		}
 	}
 
-	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT Blt(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, LPRECT lpDestRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		assert(srcSurface9Wrapper->GetImplClassName() == this->GetImplClassName());
 
@@ -586,7 +586,7 @@ public:
 		return DD_OK;
 	}
 
-	void DrawSprite(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey, LPRECT lpDestRect)
+	void DrawSprite(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey, LPRECT lpDestRect)
 	{
 		float widthScale = (float)(lpDestRect->right - lpDestRect->left) / (lpSrcRect->right - lpSrcRect->left);
 		float heightScale = (float)(lpDestRect->bottom - lpDestRect->top) / (lpSrcRect->bottom - lpSrcRect->top);
@@ -661,7 +661,7 @@ public:
 		device9->SetRenderState(ND3D9::D3DRS_ZENABLE, oldZEnableState);
 	}
 
-	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, D3DCOLOR* srcColorKey, D3DCOLOR* destColorKey) override
+	virtual HRESULT BltFast(ISurface9Wrapper* srcSurface9Wrapper, LPRECT lpSrcRect, DWORD destX, DWORD destY, dx6::D3DCOLOR* srcColorKey, dx6::D3DCOLOR* destColorKey) override
 	{
 		assert(srcSurface9Wrapper->GetImplClassName() == this->GetImplClassName());
 
@@ -676,7 +676,7 @@ public:
 		return DD_OK;
 	}
 
-	virtual HRESULT FillColor(LPRECT rect, D3DCOLOR color) override
+	virtual HRESULT FillColor(LPRECT rect, dx6::D3DCOLOR color) override
 	{
 		if (m_isRenderTarget)
 		{
@@ -729,7 +729,7 @@ private:
 		return m_d3d9Context->GetResource9<ND3D9::IDirect3DTexture9>(m_resource9Handle, nullptr);
 	}
 
-	HRESULT FillColorLockableSurface(LPRECT rect, D3DCOLOR color)
+	HRESULT FillColorLockableSurface(LPRECT rect, dx6::D3DCOLOR color)
 	{
 		HRESULT hr = DDERR_GENERIC;
 		auto surface9 = GetSurface9();
@@ -742,10 +742,10 @@ private:
 			char* destBits = (char*)destLockedRect.pBits;
 			for (int y = 0; y < destHeight; y++)
 			{
-				D3DCOLOR* destLineStart = (D3DCOLOR*)destBits;
+				dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destBits;
 				for (int x = 0; x < destWidth; x++)
 				{
-					D3DCOLOR& destPixel = destLineStart[x];
+					dx6::D3DCOLOR& destPixel = destLineStart[x];
 
 					destPixel = color;
 				}
@@ -758,14 +758,14 @@ private:
 		return hr;
 	}
 
-	HRESULT FillColorForRenderTarget(LPRECT rect, D3DCOLOR color)
+	HRESULT FillColorForRenderTarget(LPRECT rect, dx6::D3DCOLOR color)
 	{
 		auto surface9 = GetSurface9();
 		SmartPtr<ND3D9::IDirect3DSurface9> oldRenderTarget;
 		m_d3d9Context->GetDevice()->GetRenderTarget(0, &oldRenderTarget);
 
 		m_d3d9Context->GetDevice()->SetRenderTarget(0, surface9);
-		D3DRECT d3dRect = { 0 };
+		dx6::D3DRECT d3dRect = { 0 };
 		d3dRect.x1 = rect->left;
 		d3dRect.x2 = rect->right;
 		d3dRect.y1 = rect->top;
@@ -1174,7 +1174,7 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 
 	if (dwFlags & DDBLT_COLORFILL)
 	{
-		D3DCOLOR color = lpDDBltFx->dwFillColor;
+		dx6::D3DCOLOR color = lpDDBltFx->dwFillColor;
 		if (m_surfaceType == ESurfaceType::Primary)
 		{
 			if (m_desc.ddsCaps.dwCaps & DDSCAPS_COMPLEX)
@@ -1240,8 +1240,8 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 	destSurface = this;
 	destSurface9 = destSurface->GetSurface9();
 
-	D3DCOLOR* srcColorKey = nullptr;
-	D3DCOLOR* destColorKey = nullptr;
+	dx6::D3DCOLOR* srcColorKey = nullptr;
+	dx6::D3DCOLOR* destColorKey = nullptr;
 
 	if (dwFlags & DDBLT_KEYSRC)
 	{
@@ -1335,8 +1335,8 @@ HRESULT m_IDirectDrawSurface4::BltFast(DWORD dwX, DWORD dwY, LPDIRECTDRAWSURFACE
 	{
 		m_IDirectDrawSurface4* destSurface = this;
 
-		D3DCOLOR* srcColorKey = nullptr;
-		D3DCOLOR* destColorKey = nullptr;
+		dx6::D3DCOLOR* srcColorKey = nullptr;
+		dx6::D3DCOLOR* destColorKey = nullptr;
 
 		if (dwFlags & DDBLTFAST_SRCCOLORKEY)
 		{

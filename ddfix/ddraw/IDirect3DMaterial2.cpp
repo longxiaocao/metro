@@ -64,7 +64,7 @@ HRESULT m_IDirect3DMaterial2::GetMaterial(dx6::LPD3DMATERIAL a)
 	return ProxyInterface->GetMaterial(a);
 }
 
-HRESULT m_IDirect3DMaterial2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, LPD3DMATERIALHANDLE b)
+HRESULT m_IDirect3DMaterial2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, dx6::LPD3DMATERIALHANDLE b)
 {
 	if (a)
 	{

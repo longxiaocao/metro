@@ -100,7 +100,7 @@ ULONG m_IDirect3DTexture2::Release()
 	return x;
 }
 
-HRESULT m_IDirect3DTexture2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, LPD3DTEXTUREHANDLE b)
+HRESULT m_IDirect3DTexture2::GetHandle(dx6::LPDIRECT3DDEVICE2 a, dx6::LPD3DTEXTUREHANDLE b)
 {
 	if (a)
 	{
@@ -152,13 +152,13 @@ HRESULT m_IDirect3DTexture2::Load(dx6::LPDIRECT3DTEXTURE2 a)
 			char* destLineBitsStart = (char*)destLockedRect.pBits;
 			for (int y = 0; y < height; y++)
 			{
-				D3DCOLOR* srcLineStart = (D3DCOLOR*)srcLineBitsStart;
-				D3DCOLOR* destLineStart = (D3DCOLOR*)destLineBitsStart;
+				dx6::D3DCOLOR* srcLineStart = (dx6::D3DCOLOR*)srcLineBitsStart;
+				dx6::D3DCOLOR* destLineStart = (dx6::D3DCOLOR*)destLineBitsStart;
 				for (int x = 0; x < width; x++)
 				{
-					D3DCOLOR srcPixel = srcLineStart[x];
-					D3DCOLOR& destPixel = destLineStart[x];
-					D3DCOLOR temp = srcPixel | 0xff000000;
+					dx6::D3DCOLOR srcPixel = srcLineStart[x];
+					dx6::D3DCOLOR& destPixel = destLineStart[x];
+					dx6::D3DCOLOR temp = srcPixel | 0xff000000;
 					if (hasSrcColorKey)
 					{
 						if ((srcPixel & 0x00ffffff) == srcColorKey.dwColorSpaceLowValue)
