@@ -2,28 +2,33 @@
 
 #define INITGUID
 
-// Phase 8.23: 解决 d3d.h (DX6) 在 DIRECT3D_VERSION=0x0900 时不定义 IDirect3D 问题。
+// Phase 8.24: 解决 d3d.h 在不同 DIRECT3D_VERSION 下定义不同接口的问题。
 //
 // 背景:
 //   1) d3d.h (DX6) 内部根据 DIRECT3D_VERSION 选择定义哪些接口:
-//      * 0x0500 (DX5) -> IDirect3D, IDirect3DMaterial, IDirect3DTexture, IDirect3DViewport
-//        等老接口
-//      * 0x0600 (DX6) -> 在 0x0500 基础上加 IDirect3D2, IDirect3DTexture2
-//      * 0x0700+ (DX7) -> 在 0x0600 基础上加 IDirect3D3, IDirect3D7 等
-//      **任何 >=0x0700 都不再定义 IDirect3D** (DX5 老接口被淘汰)。
-//   2) Phase 8.22 把 DIRECT3D_VERSION 强制设为 0x0900,导致 d3d.h 走 DX7+ 分支,
-//      不再定义 IDirect3D。后续 IDirect3D.h 中 `class m_IDirect3D : public
-//      dx6::IDirect3D` 编译失败 (CI #28: error C2039 'IDirect3D': is not a
-//      member of 'dx6')。
-//   3) Phase 8.22 同时还修复了 d3d9types.h 的 C3646 问题(必须 DIRECT3D_VERSION=
-//      0x0900 才能让 d3d9types.h 完整展开,定义 D3DMATERIAL9/D3DCOLORVALUE)。
+//      * 0x0600 (DX6) -> IDirect3D, IDirect3D2, IDirect3D3, IDirect3DMaterial*,
+//        IDirect3DTexture*, IDirect3DDevice*, IDirect3DViewport*, IDirect3DLight,
+//        IDirect3DExecuteBuffer 等
+//      * 0x0700 (DX7) -> 在 DX6 基础上加 IDirect3D7, IDirect3DDevice7,
+//        IDirect3DVertexBuffer, IDirect3DVertexBuffer7 等
+//      * < 0x0500    -> IDirect3D, IDirect3DMaterial 等 DX5 基础接口
+//      **0x0600 不定义 IDirect3D7**; **0x0700 不定义 IDirect3D**
+//   2) 代码库需要同时使用 IDirect3D (DX5) 和 IDirect3D7 (DX7),
+//      必须在 dx6 namespace 内分两次 include d3d.h,中间 #undef 头保护。
+//   3) Phase 8.22 (单次 include, DIRECT3D_VERSION=0x0900) 失败原因:
+//      d3d.h 走 DX7+ 分支,不定义 IDirect3D (CI #28)。
+//   4) Phase 8.23 (单次 include, DIRECT3D_VERSION=0x0600) 失败原因:
+//      d3d.h 走 DX6 分支,不定义 IDirect3D7 (CI #29)。
 //
-// 修复 (Phase 8.23):
+// 修复 (Phase 8.24):
 //   1) 先强制 DIRECT3D_VERSION=0x0900 并 #include <d3d9types.h>,让 DX9 类型
-//      在全局命名空间完整定义 (D3DMATERIAL9, D3DCOLORVALUE, D3DDEVTYPE 等)
-//   2) 临时把 DIRECT3D_VERSION 改回 0x0600 (DX6),让 d3d.h 在 dx6 namespace 内
-//      走 DX6 分支,定义 IDirect3D / IDirect3D2 / IDirect3DMaterial 等
-//   3) 恢复 DIRECT3D_VERSION=0x0900,让后续 d3d9.h / d3dx9.h 走 DX9 分支
+//      在全局命名空间完整定义 (D3DMATERIAL9, D3DCOLORVALUE, D3DDEVTYPE 等)。
+//   2) 临时 DIRECT3D_VERSION=0x0600 + #include d3d.h (dx6 namespace 内):
+//      定义 IDirect3D, IDirect3D2, IDirect3D3, IDirect3DMaterial* 等 DX5/DX6 接口。
+//   3) #undef d3d.h 头保护 + 临时 DIRECT3D_VERSION=0x0700 + 再次 #include d3d.h:
+//      定义 IDirect3D7, IDirect3DDevice7, IDirect3DVertexBuffer, IDirect3DVertexBuffer7
+//      等 DX7 接口。
+//   4) 恢复 DIRECT3D_VERSION=0x0900,让后续 d3d9.h / d3dx9.h 走 DX9 分支。
 #if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
 #undef DIRECT3D_VERSION
 #define DIRECT3D_VERSION 0x0900
@@ -52,13 +57,31 @@
 //       (LPD3DENUMDEVICESCALLBACK 等) 和 struct (D3DFINDDEVICESEARCH 等) 也
 //       全部进入 dx6::。
 //
-// Phase 8.23: 临时切到 0x0600,让 d3d.h 走 DX6 分支定义 IDirect3D (DX5 老接口)。
-//   之后恢复 0x0900,让后续 d3d9.h 走 DX9 分支。
+// Phase 8.24: 分两次 include d3d.h,中间 #undef 头保护。两次都包在 dx6
+//   namespace 内,避免枚举冲突 (C2011)。头保护名 _D3D_H_ 来自 Windows SDK
+//   d3d.h;若保护名不同,#undef 是无害的(无操作)。
+#pragma push_macro("_D3D_H_")
+#pragma push_macro("__D3D_H__")
+#pragma push_macro("_D3DH_")
+#pragma push_macro("__D3DH__")
 #undef DIRECT3D_VERSION
 #define DIRECT3D_VERSION 0x0600
 namespace dx6 {
 #include <d3d.h>
 }
+#undef _D3D_H_
+#undef __D3D_H__
+#undef _D3DH_
+#undef __D3DH__
+#undef DIRECT3D_VERSION
+#define DIRECT3D_VERSION 0x0700
+namespace dx6 {
+#include <d3d.h>
+}
+#pragma pop_macro("_D3D_H_")
+#pragma pop_macro("__D3D_H__")
+#pragma pop_macro("_D3DH_")
+#pragma pop_macro("__D3DH__")
 #undef DIRECT3D_VERSION
 #define DIRECT3D_VERSION 0x0900
 
