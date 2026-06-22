@@ -34,7 +34,7 @@ if (NOT FXC_EXECUTABLE)
 endif()
 message(STATUS "Found fxc.exe: ${FXC_EXECUTABLE}")
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h
+add_custom_command(OUTPUT ColorKeyHLSLC.h
     COMMAND ${FXC_EXECUTABLE} /Eps_main /Vng_colorKeyHLSLC /Tps_2_b /Fh${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h /nologo ddraw/ColorKey.hlsl
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ddraw/ColorKey.hlsl
@@ -70,7 +70,7 @@ target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib 
 
 # 可选：ddfix 静态库（Phase 5.3，BUILD_DDFIX_LIB=ON 时额外产出 ddfix-static.lib）
 if (BUILD_DDFIX_LIB)
-    add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h)
+    add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC.h)
     target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib)
     set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
 endif()

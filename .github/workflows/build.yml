@@ -79,10 +79,12 @@ jobs:
             -DBUILD_DDFIX_LIB=OFF `
             -DGameExe="${{ env.GAME_EXE }}" `
             -DGameStartupArgs="${{ env.GAME_STARTUP_ARGS }}" 2>&1 | Tee-Object -FilePath build\configure.log
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "::error::CMake configure failed, showing last 100 lines of configure.log:"
-            Get-Content build\configure.log -Tail 100
-            exit $LASTEXITCODE
+          $cmakeExit = $LASTEXITCODE
+          Write-Host "::notice::CMake exit code: $cmakeExit"
+          if ($cmakeExit -ne 0) {
+            Write-Host "::error::CMake configure failed, showing FULL configure.log:"
+            Get-Content build\configure.log
+            exit $cmakeExit
           }
 
       # -------------------- 5. build --------------------
@@ -147,6 +149,8 @@ jobs:
             build/Testing/**/*.log
             build/CMakeFiles/CMakeError.log
             build/CMakeFiles/CMakeOutput.log
+            build/configure.log
+            build/build.log
           if-no-files-found: ignore
           retention-days: 7
 
