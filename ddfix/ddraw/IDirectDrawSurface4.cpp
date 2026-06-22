@@ -597,8 +597,9 @@ public:
 		// Phase 2.3: 从 D3D9Context 单例取共享 PS / ConstantTable。Reset 后会自动重建。
 		// 之所以用裸指针（不持 SmartPtr），是因为这些资源由 D3D9Context 单例管理生命周期，
 		// Reset 时旧指针置 null 但不 Release（D3D9 内部已清），新指针走 EnsureSharedColorKeyShader 重建。
-		ND3D9::IDirect3DPixelShader9* sharedPS = m_d3d9Context->GetSharedColorKeyShader();
-		ND3D9::ID3DXConstantTable* sharedCT = m_d3d9Context->GetSharedColorKeyConstantTable();
+		// Phase 8.16: 移除 ND3D9:: 限定（类型为全局 typedef，与 D3D9Context.h 保持一致）
+		IDirect3DPixelShader9* sharedPS = m_d3d9Context->GetSharedColorKeyShader();
+		ID3DXConstantTable* sharedCT = m_d3d9Context->GetSharedColorKeyConstantTable();
 		if (!sharedPS || !sharedCT)
 		{
 			// 着色器初始化失败，跳过 PS 路径并继续（避免崩溃，但渲染可能异常）
@@ -606,10 +607,10 @@ public:
 			return;
 		}
 
-		SmartPtr<ND3D9::IDirect3DPixelShader9> oldPixelShader;
+		SmartPtr<IDirect3DPixelShader9> oldPixelShader;
 		device9->GetPixelShader(&oldPixelShader);
 
-		SmartPtr<ND3D9::IDirect3DSurface9> oldRenderTarget;
+		SmartPtr<IDirect3DSurface9> oldRenderTarget;
 		device9->GetRenderTarget(0, &oldRenderTarget);
 		device9->SetRenderTarget(0, GetSurface9());
 

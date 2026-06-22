@@ -99,8 +99,10 @@ namespace ND3D9
 
 		// Phase 2.3: 共享 ColorKey 像素着色器（懒加载，单例）
 		// 所有 RenderTarget HardwareSurface9Wrapper 共享同一 PS/ConstantTable，避免每次构造时重复 CreatePixelShader。
-		ND3D9::IDirect3DPixelShader9* GetSharedColorKeyShader();
-		ND3D9::ID3DXConstantTable* GetSharedColorKeyConstantTable();
+		// Phase 8.16: 移除 ND3D9:: 限定。d3dx9.h 已在 file scope include，类型为全局 typedef，
+		// 之前的限定是冗余但无害；清理后避免 C2872 ambiguous（ND3D9 vs ::）风险。
+		IDirect3DPixelShader9* GetSharedColorKeyShader();
+		ID3DXConstantTable* GetSharedColorKeyConstantTable();
 
 	private:
 		// 内部：懒加载创一次 ColorKey 着色器配套资源。
@@ -146,8 +148,9 @@ namespace ND3D9
 		::HWND m_hwnd;
 
 		// Phase 2.3: 共享 PS / ConstantTable。裸指针由 D3D9 设备管理，Reset 时随设备一起失效。
-		ND3D9::IDirect3DPixelShader9* m_colorKeyShader;
-		ND3D9::ID3DXConstantTable* m_colorKeyConstantTable;
+		// Phase 8.16: 移除 ND3D9:: 限定，保持与 D3D9Context.cpp 实现一致。
+		IDirect3DPixelShader9* m_colorKeyShader;
+		ID3DXConstantTable* m_colorKeyConstantTable;
 		bool m_colorKeyShaderInited;
 	};
 }
