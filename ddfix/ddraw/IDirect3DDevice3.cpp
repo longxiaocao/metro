@@ -449,7 +449,7 @@ HRESULT m_IDirect3DDevice3::Vertex(LPVOID a)
 	if (!m_immediateModeActive)
 	{
 		// 没有 Begin 就调 Vertex：当作隐式 Begin(TRIANGLELIST) 处理（参考 ddraw compat layer 行为）。
-		Begin(D3DPT_TRIANGLELIST, D3DFVF_VERTEX, 0);
+		Begin(dx6::D3DPT_TRIANGLELIST, D3DFVF_VERTEX, 0);
 	}
 	if (!a)
 	{

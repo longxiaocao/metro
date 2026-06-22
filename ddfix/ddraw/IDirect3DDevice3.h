@@ -33,7 +33,7 @@ public:
 		, Refs(1)
 		, m_lightAmbient({0})
 		, m_immediateModeActive(false)
-		, m_immediatePrimType(D3DPT_TRIANGLELIST)
+		, m_immediatePrimType(dx6::D3DPT_TRIANGLELIST)
 		, m_immediateFVF(0)
 		, m_immediateVertexCount(0)
 		, m_immediateStride(0)

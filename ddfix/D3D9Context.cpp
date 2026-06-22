@@ -575,7 +575,7 @@ void D3D9Context::EnsureSharedColorKeyShader()
 	HRESULT hr = m_d3dDev9->CreatePixelShader((DWORD*)g_colorKeyHLSLC, &m_colorKeyShader);
 	if (SUCCEEDED(hr))
 	{
-		hr = ND3D9::D3DXGetShaderConstantTable((DWORD*)g_colorKeyHLSLC, &m_colorKeyConstantTable);
+		hr = D3DXGetShaderConstantTable((DWORD*)g_colorKeyHLSLC, &m_colorKeyConstantTable);
 	}
 	if (FAILED(hr))
 	{
