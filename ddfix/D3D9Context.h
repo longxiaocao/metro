@@ -6,31 +6,19 @@
 struct HWND__;
 typedef struct HWND__ *HWND;
 
-// Phase 8.14: 把 d3dx9.h include 移到 file scope（全局），避免被 namespace ND3D9
-//  包装后把 windows.h 的 typedef（DWORD/IDirect3DDevice9 等）困在 ND3D9 内。
-//  之前 line 9-32 在 namespace ND3D9 { ... } 内 include d3dx9.h，间接把 windows.h
-//  的内容拉到 ND3D9 namespace，导致其他 cpp 找不到 DWORD 报 C2061，
-//  D3D9Context.cpp:289 GetDevice 报 C2872 IDirect3DDevice9 ambiguous。
-//  移到 file scope 后所有 typedef 都是全局的，所有 namespace 都能正常查找。
-#undef _D3D9_H_
-#undef DIRECT3D_VERSION
-#undef D3DFVF_POSITION_MASK
-#undef D3DFVF_RESERVED2
-#undef D3D_OK
-#undef D3DERR_WRONGTEXTUREFORMAT
-#undef D3DERR_UNSUPPORTEDCOLOROPERATION
-#undef D3DERR_UNSUPPORTEDCOLORARG
-#undef D3DERR_UNSUPPORTEDALPHAOPERATION
-#undef D3DERR_UNSUPPORTEDALPHAARG
-#undef D3DERR_TOOMANYOPERATIONS
-#undef D3DERR_CONFLICTINGTEXTUREFILTER
-#undef D3DERR_UNSUPPORTEDFACTORVALUE
-#undef D3DERR_CONFLICTINGRENDERSTATE
-#undef D3DERR_UNSUPPORTEDTEXTUREFILTER
-#undef D3DERR_CONFLICTINGTEXTUREPALETTE
-#define DIRECT3D_VERSION 0x0900
-
-#undef D3DMATRIX_DEFINED
+// Phase 8.17: d3d9.h / d3dx9.h 自身已有标准头保护：
+//   d3d9.h  : #ifndef _D3D9_H_  /  #define _D3D9_H_
+//   d3dx9.h : #ifndef __D3DX9_H__  /  #define __D3DX9_H__
+//   d3d9types.h : #ifndef _d3d9types_h_  /  #define _d3d9types_h_
+// 而且本头用 #pragma once。**不需要也不应该** #undef 这些保护宏：
+//   1) 删 #undef _D3D9_H_ —— 之前 undef 后 d3d9.h 被二次 include，
+//      d3d9types.h 内的 _D3DMATRIX/_D3DBLEND 等 9 个类型在 C++ 模式下
+//      报 C2011 'enum/struct type redefinition'（CI #19 失败根因）。
+//   2) 删 #undef DIRECT3D_VERSION —— d3d9.h 内部已经 #ifndef 包了，
+//      重复 #define 也不会出错。
+//   3) 删 #undef D3DMATRIX_DEFINED —— d3dx9.h 自带 #ifndef D3DMATRIX_DEFINED 保护。
+// Phase 8.14 的目标（把 d3dx9.h 移出 ND3D9 namespace，避免 windows.h typedef 被困）
+// 仍然通过 file-scope #include 实现，与这些 #undef 无关。
 #include <d3dx9.h>
 #include "Common/SmartPointer.h"
 
