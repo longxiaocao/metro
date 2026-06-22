@@ -98,10 +98,15 @@ jobs:
           #   原实现：Start-Process -ArgumentList @("-G", "Visual Studio 17 2022", ...)
           #   现象：cmake 收到 "Visual" 而非 "Visual Studio 17 2022"，报 "Could not create named generator Visual"
           #   修复：& cmake @args 走 PowerShell 7+ 的 splat 路径，整串作为单个参数传递
+          # Phase 8.7: 改用 Visual Studio 18 2026
+          #   原因：windows-latest runner 默认装的是 VS 18 2026（带星号 = cmake --help 标注的默认 generator），
+          #   ilammy/msvc-dev-cmd@v1 虽激活 MSVC env，但 cmake 用 vswhere 找不到 VS 17 2022 实例
+          #   现象：CMake Error: could not find any instance of Visual Studio (generator=Visual Studio 17 2022)
+          #   修复：跟随 runner 实际安装，改用 VS 18 2026
           $cmakeArgs = @(
             '-S', '.'
             '-B', 'build'
-            '-G', 'Visual Studio 17 2022'
+            '-G', 'Visual Studio 18 2026'
             '-A', 'x64'
             '-DBUILD_TESTS=ON'
             '-DBUILD_DDFIX_LIB=OFF'
