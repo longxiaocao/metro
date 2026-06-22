@@ -65,7 +65,7 @@ extern AddressLookupTable<void> ProxyAddressLookupTable;
 #include "IDirect3DMaterial3.h"
 #include "IDirect3DTexture.h"
 #include "IDirect3DTexture2.h"
-#include "IDirect3DVertexBuffer.h"
+#include "dx6::IDirect3DVertexBuffer.h"
 #include "IDirect3DVertexBuffer7.h"
 #include "IDirect3DViewport.h"
 #include "IDirect3DViewport2.h"

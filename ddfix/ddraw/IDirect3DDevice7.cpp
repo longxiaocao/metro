@@ -295,7 +295,7 @@ HRESULT m_IDirect3DDevice7::DeleteStateBlock(DWORD a)
 	return ProxyInterface->DeleteStateBlock(a);
 }
 
-HRESULT m_IDirect3DDevice7::CreateStateBlock(D3DSTATEBLOCKTYPE a, LPDWORD b)
+HRESULT m_IDirect3DDevice7::CreateStateBlock(dx6::D3DSTATEBLOCKTYPE a, LPDWORD b)
 {
 	return ProxyInterface->CreateStateBlock(a, b);
 }

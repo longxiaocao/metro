@@ -186,12 +186,12 @@ HRESULT m_IDirect3DDevice2::GetRenderTarget(LPDIRECTDRAWSURFACE * a)
 	return hr;
 }
 
-HRESULT m_IDirect3DDevice2::Begin(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, DWORD c)
+HRESULT m_IDirect3DDevice2::Begin(dx6::D3DPRIMITIVETYPE a, dx6::D3DVERTEXTYPE b, DWORD c)
 {
 	return ProxyInterface->Begin(a, b, c);
 }
 
-HRESULT m_IDirect3DDevice2::BeginIndexed(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice2::BeginIndexed(dx6::D3DPRIMITIVETYPE a, dx6::D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
 {
 	return ProxyInterface->BeginIndexed(a, b, c, d, e);
 }
@@ -246,12 +246,12 @@ HRESULT m_IDirect3DDevice2::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE a, dx6:
 	return ProxyInterface->MultiplyTransform(a, b);
 }
 
-HRESULT m_IDirect3DDevice2::DrawPrimitive(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
+HRESULT m_IDirect3DDevice2::DrawPrimitive(dx6::D3DPRIMITIVETYPE a, dx6::D3DVERTEXTYPE b, LPVOID c, DWORD d, DWORD e)
 {
 	return ProxyInterface->DrawPrimitive(a, b, c, d, e);
 }
 
-HRESULT m_IDirect3DDevice2::DrawIndexedPrimitive(dx6::D3DPRIMITIVETYPE a, D3DVERTEXTYPE b, LPVOID c, DWORD d, LPWORD e, DWORD f, DWORD g)
+HRESULT m_IDirect3DDevice2::DrawIndexedPrimitive(dx6::D3DPRIMITIVETYPE a, dx6::D3DVERTEXTYPE b, LPVOID c, DWORD d, LPWORD e, DWORD f, DWORD g)
 {
 	return ProxyInterface->DrawIndexedPrimitive(a, b, c, d, e, f, g);
 }

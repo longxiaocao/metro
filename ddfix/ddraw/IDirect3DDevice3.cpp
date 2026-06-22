@@ -21,27 +21,27 @@ static void GetD3DPrimitiveCount(unsigned vertexCount, dx6::D3DPRIMITIVETYPE typ
 {
 	switch (type)
 	{
-	case D3DPT_TRIANGLELIST:
+	case dx6::D3DPT_TRIANGLELIST:
 		primitiveCount = vertexCount / 3;
 		break;
 
-	case D3DPT_LINELIST:
+	case dx6::D3DPT_LINELIST:
 		primitiveCount = vertexCount / 2;
 		break;
 
-	case D3DPT_POINTLIST:
+	case dx6::D3DPT_POINTLIST:
 		primitiveCount = vertexCount;
 		break;
 
-	case D3DPT_TRIANGLESTRIP:
+	case dx6::D3DPT_TRIANGLESTRIP:
 		primitiveCount = vertexCount - 2;
 		break;
 
-	case D3DPT_LINESTRIP:
+	case dx6::D3DPT_LINESTRIP:
 		primitiveCount = vertexCount - 1;
 		break;
 
-	case D3DPT_TRIANGLEFAN:
+	case dx6::D3DPT_TRIANGLEFAN:
 		primitiveCount = vertexCount - 2;
 		break;
 	}
@@ -398,10 +398,10 @@ HRESULT m_IDirect3DDevice3::Begin(dx6::D3DPRIMITIVETYPE a, DWORD b, DWORD c)
 {
 	// Phase 2.5: 立即模式 (Begin) 不再透传到 ProxyInterface（nullptr）。
 	// 设计：把 DX6 立即模式转成 D3D9 DrawPrimitiveUP 调用。
-	//   b = vertex format descriptor (D3DVERTEXTYPE 枚举)
+	//   b = vertex format descriptor (dx6::D3DVERTEXTYPE 枚举)
 	//   c = flags (D3DDP_*)：当前 D3D9 路径只识别 D3DDP_DONOTLIGHT，其余忽略。
 	// Vertex() 累计顶点数据到 m_immediateVB，End() 一次性 DrawPrimitiveUP 提交。
-	// 注意：DX6 Begin 接口的 vertex format 参数语义是 D3DVERTEXTYPE（枚举：TLVertex/LVertex/...)，
+	// 注意：DX6 Begin 接口的 vertex format 参数语义是 dx6::D3DVERTEXTYPE（枚举：TLVertex/LVertex/...)，
 	// 但实际项目里 DX6 调用方都把 c 当 D3DFVF（float mask）。这里按 FVF 解析。
 	if (m_immediateModeActive)
 	{

@@ -45,7 +45,7 @@
 // 	QUERYINTERFACE(dx6::IDirect3DMaterial3);
 // 	QUERYINTERFACE(dx6::IDirect3DTexture);
 // 	QUERYINTERFACE(dx6::IDirect3DTexture2);
-// 	QUERYINTERFACE(IDirect3DVertexBuffer);
+// 	QUERYINTERFACE(dx6::IDirect3DVertexBuffer);
 // 	QUERYINTERFACE(dx6::IDirect3DVertexBuffer7);
 // 	QUERYINTERFACE(dx6::IDirect3DViewport);
 // 	QUERYINTERFACE(dx6::IDirect3DViewport2);

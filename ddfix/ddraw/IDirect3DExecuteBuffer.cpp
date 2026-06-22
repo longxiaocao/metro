@@ -84,7 +84,7 @@ HRESULT m_IDirect3DExecuteBuffer::GetExecuteData(dx6::LPD3DEXECUTEDATA a)
 	return ProxyInterface->GetExecuteData(a);
 }
 
-HRESULT m_IDirect3DExecuteBuffer::Validate(LPDWORD a, LPD3DVALIDATECALLBACK b, LPVOID c, DWORD d)
+HRESULT m_IDirect3DExecuteBuffer::Validate(LPDWORD a, dx6::LPD3DVALIDATECALLBACK b, LPVOID c, DWORD d)
 {
 	return ProxyInterface->Validate(a, b, c, d);
 }
