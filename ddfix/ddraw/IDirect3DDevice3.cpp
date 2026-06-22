@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -523,22 +523,22 @@ HRESULT m_IDirect3DDevice3::GetRenderState(dx6::D3DRENDERSTATETYPE a, LPDWORD b)
 	*b = 0;
 	switch (a)
 	{
-	case D3DRENDERSTATE_ANTIALIAS:
+	case dx6::D3DRENDERSTATE_ANTIALIAS:
 		break;
-	case D3DRENDERSTATE_TEXTUREPERSPECTIVE:
+	case dx6::D3DRENDERSTATE_TEXTUREPERSPECTIVE:
 		break;
 	case dx6::D3DRENDERSTATE_LINEPATTERN:
 		break;
 	case dx6::D3DRENDERSTATE_ZVISIBLE:
 		break;
-	case D3DRENDERSTATE_STIPPLEDALPHA:
+	case dx6::D3DRENDERSTATE_STIPPLEDALPHA:
 		break;
-	case D3DRENDERSTATE_EDGEANTIALIAS:
+	case dx6::D3DRENDERSTATE_EDGEANTIALIAS:
 		break;
 	case dx6::D3DRENDERSTATE_COLORKEYENABLE:
 		*b = m_colorKeyEnabled;
 		break;
-	case D3DRENDERSTATE_ZBIAS:
+	case dx6::D3DRENDERSTATE_ZBIAS:
 		break;
 	default:
 		hr = ND3D9::D3D9Context::Instance()->GetDevice()->GetRenderState((D3DRENDERSTATETYPE)a, b);
@@ -552,24 +552,24 @@ HRESULT m_IDirect3DDevice3::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 	HRESULT hr = DD_OK;
 	switch (a)
 	{
-	case D3DRENDERSTATE_ANTIALIAS:
+	case dx6::D3DRENDERSTATE_ANTIALIAS:
 		break;
-	case D3DRENDERSTATE_TEXTUREPERSPECTIVE:
+	case dx6::D3DRENDERSTATE_TEXTUREPERSPECTIVE:
 		break;
 	case dx6::D3DRENDERSTATE_LINEPATTERN:
 		break;
 	case dx6::D3DRENDERSTATE_ZVISIBLE:
 		break;
-	case D3DRENDERSTATE_STIPPLEDALPHA:
+	case dx6::D3DRENDERSTATE_STIPPLEDALPHA:
 		break;
-	case D3DRENDERSTATE_EDGEANTIALIAS:
+	case dx6::D3DRENDERSTATE_EDGEANTIALIAS:
 		break;
 	case dx6::D3DRENDERSTATE_COLORKEYENABLE:
 		m_colorKeyEnabled = b;
 		if (m_colorKeyEnabled)
 			ND3D9::D3D9Context::Instance()->GetDevice()->SetRenderState((D3DRS_ALPHATESTENABLE), TRUE);
 		break;
-	case D3DRENDERSTATE_ZBIAS:
+	case dx6::D3DRENDERSTATE_ZBIAS:
 		break;
 	case dx6::D3DRENDERSTATE_TEXTUREMAPBLEND:
 	{
@@ -579,22 +579,22 @@ HRESULT m_IDirect3DDevice3::SetRenderState(dx6::D3DRENDERSTATETYPE a, DWORD b)
 		case dx6::D3DTBLEND_DECAL:
 			assert(false);
 			break;
-		case D3DTBLEND_MODULATE:
+		case dx6::D3DTBLEND_MODULATE:
 			opD9 = D3DTOP_MODULATE;
 			break;
-		case D3DTBLEND_DECALALPHA:
+		case dx6::D3DTBLEND_DECALALPHA:
 			assert(false);
 			break;
-		case D3DTBLEND_MODULATEALPHA:
+		case dx6::D3DTBLEND_MODULATEALPHA:
 			opD9 = D3DTOP_MODULATEALPHA_ADDCOLOR;
 			break;
 		case dx6::D3DTBLEND_DECALMASK:
 			assert(false);
 			break;
-		case D3DTBLEND_MODULATEMASK:
+		case dx6::D3DTBLEND_MODULATEMASK:
 			assert(false);
 			break;
-		case D3DTBLEND_COPY:
+		case dx6::D3DTBLEND_COPY:
 			assert(false);
 			break;
 		case dx6::D3DTBLEND_ADD:
@@ -631,7 +631,7 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (a)
 	{
-	case D3DLIGHTSTATE_MATERIAL:
+	case dx6::D3DLIGHTSTATE_MATERIAL:
 	{
 		auto mat3 = reinterpret_cast<m_IDirect3DMaterial3*>(b);
 		D3DMATERIAL9 mat9;
@@ -639,13 +639,13 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 		hr = device9->SetMaterial(&mat9);
 		break;
 	}
-	case D3DLIGHTSTATE_AMBIENT:
+	case dx6::D3DLIGHTSTATE_AMBIENT:
 		m_lightAmbient.r = RGBA_GETRED(b) / 255.0f;
 		m_lightAmbient.g = RGBA_GETGREEN(b) / 255.0f;
 		m_lightAmbient.b = RGBA_GETBLUE(b) / 255.0f;
 		m_lightAmbient.a = RGBA_GETALPHA(b) / 255.0f;
 		break;
-	case D3DLIGHTSTATE_COLORMODEL:
+	case dx6::D3DLIGHTSTATE_COLORMODEL:
 		// I don't know how to convert.
 		assert(false);
 		break;
@@ -653,16 +653,16 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 		hr = device9->SetRenderState(D3DRS_FOGTABLEMODE, b);
 		hr = device9->SetRenderState(D3DRS_FOGVERTEXMODE, b);
 		break;
-	case D3DLIGHTSTATE_FOGSTART:
+	case dx6::D3DLIGHTSTATE_FOGSTART:
 		hr = device9->SetRenderState(D3DRS_FOGSTART, b);
 		break;
-	case D3DLIGHTSTATE_FOGEND:
+	case dx6::D3DLIGHTSTATE_FOGEND:
 		hr = device9->SetRenderState(D3DRS_FOGEND, b);
 		break;
-	case D3DLIGHTSTATE_FOGDENSITY:
+	case dx6::D3DLIGHTSTATE_FOGDENSITY:
 		hr = device9->SetRenderState(D3DRS_FOGDENSITY, b);
 		break;
-	case D3DLIGHTSTATE_COLORVERTEX:
+	case dx6::D3DLIGHTSTATE_COLORVERTEX:
 		hr = device9->SetRenderState(D3DRS_COLORVERTEX, b);
 		break;
 	default:
@@ -682,19 +682,19 @@ HRESULT m_IDirect3DDevice3::SetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6:
 	case dx6::D3DTRANSFORMSTATE_WORLD:
 		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_VIEW:
+	case dx6::D3DTRANSFORMSTATE_VIEW:
 		hr = device9->SetTransform(D3DTS_VIEW, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_PROJECTION:
+	case dx6::D3DTRANSFORMSTATE_PROJECTION:
 		hr = device9->SetTransform(D3DTS_PROJECTION, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD1:
+	case dx6::D3DTRANSFORMSTATE_WORLD1:
 		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case dx6::D3DTRANSFORMSTATE_WORLD2:
 		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD3:
+	case dx6::D3DTRANSFORMSTATE_WORLD3:
 		hr = device9->SetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
@@ -714,19 +714,19 @@ HRESULT m_IDirect3DDevice3::GetTransform(dx6::D3DTRANSFORMSTATETYPE tsType, dx6:
 	case dx6::D3DTRANSFORMSTATE_WORLD:
 		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_VIEW:
+	case dx6::D3DTRANSFORMSTATE_VIEW:
 		hr = device9->GetTransform(D3DTS_VIEW, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_PROJECTION:
+	case dx6::D3DTRANSFORMSTATE_PROJECTION:
 		hr = device9->GetTransform(D3DTS_PROJECTION, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD1:
+	case dx6::D3DTRANSFORMSTATE_WORLD1:
 		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case dx6::D3DTRANSFORMSTATE_WORLD2:
 		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD3:
+	case dx6::D3DTRANSFORMSTATE_WORLD3:
 		hr = device9->GetTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
@@ -746,19 +746,19 @@ HRESULT m_IDirect3DDevice3::MultiplyTransform(dx6::D3DTRANSFORMSTATETYPE tsType,
 	case dx6::D3DTRANSFORMSTATE_WORLD:
 		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_VIEW:
+	case dx6::D3DTRANSFORMSTATE_VIEW:
 		hr = device9->MultiplyTransform(D3DTS_VIEW, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_PROJECTION:
+	case dx6::D3DTRANSFORMSTATE_PROJECTION:
 		hr = device9->MultiplyTransform(D3DTS_PROJECTION, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD1:
+	case dx6::D3DTRANSFORMSTATE_WORLD1:
 		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD1, matrix9);
 		break;
 	case dx6::D3DTRANSFORMSTATE_WORLD2:
 		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD2, matrix9);
 		break;
-	case D3DTRANSFORMSTATE_WORLD3:
+	case dx6::D3DTRANSFORMSTATE_WORLD3:
 		hr = device9->MultiplyTransform((D3DTRANSFORMSTATETYPE)D3DTS_WORLD3, matrix9);
 		break;
 	default:
@@ -919,17 +919,17 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (dwState)
 	{
-	case D3DTSS_ADDRESS:
+	case dx6::D3DTSS_ADDRESS:
 		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSU, pValue);
 		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSV, pValue);
 		break;
-	case D3DTSS_ADDRESSU:
+	case dx6::D3DTSS_ADDRESSU:
 		hr = device9->GetSamplerState(0, D3DSAMP_ADDRESSU, pValue);
 		break;
 	case dx6::D3DTSS_ADDRESSV:
 		device9->GetSamplerState(0, D3DSAMP_ADDRESSV, pValue);
 		break;
-	case D3DTSS_BORDERCOLOR:
+	case dx6::D3DTSS_BORDERCOLOR:
 		hr = device9->GetSamplerState(0, D3DSAMP_BORDERCOLOR, pValue);
 		break;
 	case dx6::D3DTSS_MAGFILTER:
@@ -939,7 +939,7 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 		GetMagFilterD6((dx6::D3DTEXTUREMAGFILTER&)*pValue, d9Value);
 		break;
 	}
-	case D3DTSS_MINFILTER:
+	case dx6::D3DTSS_MINFILTER:
 	{
 		D3DTEXTUREFILTERTYPE d9Value;
 		hr = device9->GetSamplerState(0, D3DSAMP_MINFILTER, (DWORD*)&d9Value);
@@ -955,7 +955,7 @@ HRESULT m_IDirect3DDevice3::GetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 
 		break;
 	}
-	case D3DTSS_MIPMAPLODBIAS:
+	case dx6::D3DTSS_MIPMAPLODBIAS:
 		hr = device9->GetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, pValue);
 		break;
 	case dx6::D3DTSS_MAXMIPLEVEL:
@@ -978,17 +978,17 @@ HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 	auto device9 = ND3D9::D3D9Context::Instance()->GetDevice();
 	switch (dwState)
 	{
-	case D3DTSS_ADDRESS:
+	case dx6::D3DTSS_ADDRESS:
 		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSU, dwValue);
 		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSV, dwValue);
 		break;
-	case D3DTSS_ADDRESSU:
+	case dx6::D3DTSS_ADDRESSU:
 		hr = device9->SetSamplerState(0, D3DSAMP_ADDRESSU, dwValue);
 		break;
 	case dx6::D3DTSS_ADDRESSV:
 		device9->SetSamplerState(0, D3DSAMP_ADDRESSV, dwValue);
 		break;
-	case D3DTSS_BORDERCOLOR:
+	case dx6::D3DTSS_BORDERCOLOR:
 		hr = device9->SetSamplerState(0, D3DSAMP_BORDERCOLOR, dwValue);
 		break;
 	case dx6::D3DTSS_MAGFILTER:
@@ -998,7 +998,7 @@ HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 		hr = device9->SetSamplerState(0, D3DSAMP_MAGFILTER, newValue);
 		break;
 	}
-	case D3DTSS_MINFILTER:
+	case dx6::D3DTSS_MINFILTER:
 	{
 		D3DTEXTUREFILTERTYPE newValue;
 		GetMinFilterD9((dx6::D3DTEXTUREMINFILTER)dwValue, newValue);
@@ -1012,7 +1012,7 @@ HRESULT m_IDirect3DDevice3::SetTextureStageState(DWORD dwStage, dx6::D3DTEXTURES
 		hr = device9->SetSamplerState(0, D3DSAMP_MIPFILTER, newValue);
 		break;
 	}
-	case D3DTSS_MIPMAPLODBIAS:
+	case dx6::D3DTSS_MIPMAPLODBIAS:
 		hr = device9->SetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, dwValue);
 		break;
 	case dx6::D3DTSS_MAXMIPLEVEL:
