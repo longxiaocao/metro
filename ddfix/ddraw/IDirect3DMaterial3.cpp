@@ -18,7 +18,7 @@
 #include "../D3D9Context.h"
 
 
-void m_IDirect3DMaterial3::GetMaterial9(ND3D9::D3DMATERIAL9* mat9) const
+void m_IDirect3DMaterial3::GetMaterial9(D3DMATERIAL9* mat9) const
 {
 	mat9->Diffuse = m_matDef.diffuse;
 	mat9->Ambient = m_matDef.ambient;

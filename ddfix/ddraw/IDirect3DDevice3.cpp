@@ -634,7 +634,7 @@ HRESULT m_IDirect3DDevice3::SetLightState(dx6::D3DLIGHTSTATETYPE a, DWORD b)
 	case D3DLIGHTSTATE_MATERIAL:
 	{
 		auto mat3 = reinterpret_cast<m_IDirect3DMaterial3*>(b);
-		ND3D9::D3DMATERIAL9 mat9;
+		D3DMATERIAL9 mat9;
 		mat3->GetMaterial9(&mat9);
 		hr = device9->SetMaterial(&mat9);
 		break;
