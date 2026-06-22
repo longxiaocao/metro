@@ -17,6 +17,56 @@
 //   `<windows.h>` 被头保护跳过, windows.h 的所有 typedef 始终在全局可见。
 #include <windows.h>
 
+// Phase 8.25.11: 把 Wine 头文件中的 DUMMYUNIONNAME / DUMMYUNIONNAME1-8 宏替换为空,
+// 让 wine d3dtypes.h 中所有 union 字段变成匿名 union 形式, 与 d3d9types.h 中
+// D3DCOLORVALUE.r / D3DMATERIAL9.Diffuse 等直接字段访问风格保持一致。
+//
+// 根因 (CI #39 报告 8 个新错误):
+//   wine_d3dtypes.h 中 _D3DCOLORVALUE / _D3DVECTOR / _D3DMATERIAL / _D3DLVERTEX 等
+//   结构体的字段都是 union { ... } DUMMYUNIONNAME; 形式, DUMMYUNIONNAME 在
+//   wine 头文件中**是命名 union**, 访问字段需要 .DUMMYUNIONNAME1.r / .DUMMYUNIONNAME.diffuse
+//   这种风格。代码中直接访问 .r / .diffuse / .ambient 报:
+//     - C2039: 'r': is not a member of 'dx6::_D3DCOLORVALUE'
+//     - C2039: 'ambient': is not a member of 'dx6::_D3DMATERIAL'
+//     - C2679: binary '=': no operator found ... 'dx6::D3DCOLORVALUE'
+//     - C2679: binary '=': no operator found ... 'dx6::D3DVECTOR'
+//   d3d9types.h 中 D3DCOLORVALUE / D3DMATERIAL9 的字段是直接的 r/g/b/a /
+//   Diffuse/Ambient/Specular/Emissive, **不**使用 DUMMYUNIONNAME, 不受影响。
+//
+// 解决: 在 ddraw.h 最顶部 #define DUMMYUNIONNAME 系列宏为空 (匿名 union 形式)。
+//   - 必须在 d3d9types.h include 之前, 否则 d3d9types.h 仍按命名 union 处理。
+//   - d3d9types.h 不使用 DUMMYUNIONNAME, define 为空不会污染 d3d9types.h 的结构体。
+//   - wine_d3dtypes.h 中的 union 字段在编译时变匿名 union, 允许 .r / .diffuse 直接访问。
+//   - 只在 include <windows.h> 之后、<d3d9types.h> 之前 define, 避免影响 windows.h
+//     自身对 DUMMYUNIONNAME 的处理 (windows.h 在某些 SDK 版本中也会 define 这些宏)。
+#ifndef DUMMYUNIONNAME
+#define DUMMYUNIONNAME
+#endif
+#ifndef DUMMYUNIONNAME1
+#define DUMMYUNIONNAME1
+#endif
+#ifndef DUMMYUNIONNAME2
+#define DUMMYUNIONNAME2
+#endif
+#ifndef DUMMYUNIONNAME3
+#define DUMMYUNIONNAME3
+#endif
+#ifndef DUMMYUNIONNAME4
+#define DUMMYUNIONNAME4
+#endif
+#ifndef DUMMYUNIONNAME5
+#define DUMMYUNIONNAME5
+#endif
+#ifndef DUMMYUNIONNAME6
+#define DUMMYUNIONNAME6
+#endif
+#ifndef DUMMYUNIONNAME7
+#define DUMMYUNIONNAME7
+#endif
+#ifndef DUMMYUNIONNAME8
+#define DUMMYUNIONNAME8
+#endif
+
 // Phase 8.25: 用项目内 Wine d3d.h / d3dtypes.h / d3dcaps.h 替代 Windows SDK d3d.h。
 //
 // 原因 (Phase 8.22 ~ 8.24 失败根因):
