@@ -269,9 +269,17 @@ namespace DDRAW_HOOK
 		return S_OK;
 	}
 
+	// Phase 8.25.3: 修复 FakeDirectDrawEnumerateA 在 x64 下 __declspec(naked) + __asm jmp 编译失败
+	//   (CI #31 错误 C2065 'jmp' + C4235 '__asm' + C2485 '__declspec(naked)')
+	//   与 Phase 8.14 修复的 5 个 fake 函数一致处理: x86 保持 naked + __asm, x64 改 reinterpret_cast 调用
+#if defined(_M_IX86)
 	void __declspec(naked) FakeDirectDrawEnumerateA() {
 		__asm jmp DDRAW_HOOK::m_directDrawEnumerateA;
 	}
+#else
+	// x64 fallback
+	void FakeDirectDrawEnumerateA() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_directDrawEnumerateA)(); }
+#endif
 };
 
 namespace DINPUT_HOOK

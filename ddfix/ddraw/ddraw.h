@@ -52,7 +52,20 @@
 // 4) Wine d3d.h 顶部 #define COM_NO_WINDOWS_H 避免 objbase.h 重复引入 windows.h。
 // 5) Wine d3d.h 用 `__WINE_D3D_H` 头保护,与 Windows SDK d3d.h 的 `_D3D_H_` 头保护
 //    互不冲突,即使 Windows SDK d3d.h 在同 TU 内被 include 也不会跳过。
+// Phase 8.25.2: 在 include wine_d3dtypes.h 之前 undef DX_SHARED_DEFINES。
+//
+// 根因: wine_d3dtypes.h line 82 有 `#ifndef DX_SHARED_DEFINES` 保护, 包裹了
+//   D3DVALUE, D3DCOLOR, D3DVECTOR, D3DRECT, D3DMATRIX, D3DVIEWPORT, D3DVIEWPORT2,
+//   D3DVIEWPORT7, D3DCLIPSTATUS, D3DTRANSFORMDATA, D3DLIGHTDATA, D3DLIGHT 等
+//   关键 typedef 块。
+//   Windows SDK 的 d3d9types.h (在 line 40 已 include) 会定义 DX_SHARED_DEFINES,
+//   导致 wine_d3dtypes.h 中上述 typedef 全部被跳过, 进而 dx6::D3DVALUE,
+//   dx6::D3DVECTOR, dx6::D3DCOLOR 等全部未定义, CI #31 报
+//   "D3DCOLOR/LPD3DVECTOR is not a member of 'dx6'" 错误。
+//
+// 解决: include 前先 #undef DX_SHARED_DEFINES 强制 wine_d3dtypes.h 完整定义。
 namespace dx6 {
+#undef DX_SHARED_DEFINES
 #include "wine_d3dtypes.h"
 #include "wine_d3dcaps.h"
 #include "wine_d3d.h"
