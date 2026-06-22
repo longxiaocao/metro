@@ -69,16 +69,15 @@ jobs:
                        ForEach-Object { $_.FullName + "\x64" }
             foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
           }
-          Write-Host "--- cmake version ---"
-          cmake --version 2>&1
-          Write-Host "--- fxc.exe location ---"
-          Get-Command fxc.exe -ErrorAction SilentlyContinue
-          Write-Host "--- DXSDK path ---"
-          Write-Host "WindowsKits10: $(Test-Path 'C:/Program Files (x86)/Windows Kits/10')"
-          Write-Host "ExtraDxSDK/Include: $(Test-Path './ExtraDxSDK/Include')"
-          Write-Host "ExtraDxSDK/Lib: $(Test-Path './ExtraDxSDK/Lib')"
-          Write-Host "ColorKey.hlsl: $(Test-Path './ddfix/ddraw/ColorKey.hlsl')"
-          Write-Host "PWD: $((Get-Location).Path)"
+          Write-Host "::notice::cmake version: $(cmake --version 2>&1 | Select-Object -First 1)"
+          $fxc = Get-Command fxc.exe -ErrorAction SilentlyContinue
+          if ($fxc) { Write-Host "::notice::fxc.exe: $($fxc.Source)" }
+          else { Write-Host "::warning::fxc.exe NOT in PATH" }
+          Write-Host "::notice::WindowsKits10: $([bool](Test-Path 'C:/Program Files (x86)/Windows Kits/10'))"
+          Write-Host "::notice::ExtraDxSDK/Include: $([bool](Test-Path './ExtraDxSDK/Include'))"
+          Write-Host "::notice::ExtraDxSDK/Lib: $([bool](Test-Path './ExtraDxSDK/Lib'))"
+          Write-Host "::notice::ColorKey.hlsl: $([bool](Test-Path './ddfix/ddraw/ColorKey.hlsl'))"
+          Write-Host "::notice::PWD: $((Get-Location).Path)"
 
       - name: Configure CMake
         shell: pwsh
@@ -111,7 +110,13 @@ jobs:
           $cmakeExit = $proc.ExitCode
           Write-Host "::notice::CMake exit code: $cmakeExit"
           if ($cmakeExit -ne 0) {
-            Write-Host "::error::CMake configure failed, see build\configure.out and build\configure.err"
+            # 把错误最后 30 行作为 annotation 展示
+            if (Test-Path build\configure.err) {
+              $errTail = Get-Content build\configure.err -Tail 30
+              foreach ($line in $errTail) { Write-Host "::error::$line" }
+            } else {
+              Write-Host "::error::CMake configure failed (no stderr captured)"
+            }
             exit $cmakeExit
           }
 
