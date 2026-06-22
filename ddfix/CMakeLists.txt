@@ -2,7 +2,23 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO")
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_custom_command(OUTPUT ColorKeyHLSLC COMMAND fxc.exe /Eps_main /Vng_colorKeyHLSLC /Tps_2_b /Fh${CMAKE_CURRENT_BINARY_DIR}\\ColorKeyHLSLC.h /nologo ddraw\\ColorKey.hlsl WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# Phase 7: fxc.exe 路径探测
+# 优先级：1) PATH 中  2) Windows SDK 10 (19041+/最新)  3) 占位错误
+find_program(FXC_EXECUTABLE
+    NAMES fxc.exe fxc
+    HINTS "C:/Program Files (x86)/Windows Kits/10/bin"
+    DOC "HLSL shader compiler (fxc.exe)"
+)
+if (NOT FXC_EXECUTABLE)
+    message(FATAL_ERROR "fxc.exe not found. Please install Windows 10 SDK or ensure fxc.exe is in PATH.")
+endif()
+message(STATUS "Found fxc.exe: ${FXC_EXECUTABLE}")
+
+add_custom_command(OUTPUT ColorKeyHLSLC
+    COMMAND ${FXC_EXECUTABLE} /Eps_main /Vng_colorKeyHLSLC /Tps_2_b /Fh${CMAKE_CURRENT_BINARY_DIR}\\ColorKeyHLSLC.h /nologo ddraw\\ColorKey.hlsl
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ddraw/ColorKey.hlsl
+    COMMENT "Compiling ColorKey.hlsl via fxc.exe")
 
 FILE(GLOB SRC_DINPUT dinput/*.h dinput/*.cpp)
 FILE(GLOB SRC_DDRAW ddraw/*.h ddraw/*.cpp)
@@ -29,12 +45,13 @@ link_directories(${EXTRADXSDK_LIB_DIR})
 
 # 主目标：ddfix 共享库（始终构建，保持向后兼容）
 add_library(ddfix SHARED ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC)
-target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib legacy_stdio_definitions.lib "-SAFESEH:NO")
+# Phase 7: 增加 dxguid.lib（IID 宏定义需要）+ winmm.lib（DInput 8 升级需要）
+target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib "-SAFESEH:NO")
 
 # 可选：ddfix 静态库（Phase 5.3，BUILD_DDFIX_LIB=ON 时额外产出 ddfix-static.lib）
 if (BUILD_DDFIX_LIB)
     add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC)
-    target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib legacy_stdio_definitions.lib)
+    target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib)
     set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
 endif()
 
@@ -47,8 +64,8 @@ source_group("dinput" FILES ${SRC_DINPUT})
 source_group("ddraw" FILES ${SRC_DDRAW})
 source_group("dshow" FILES ${SRC_DSHOW})
 source_group("Common" FILES ${SRC_COMMON})
-source_group("Config" FILES ${SRC_CONFIG})
-source_group("Debug" FILES ${SRC_DEBUG})
+source_group("config" FILES ${SRC_CONFIG})
+source_group("debug" FILES ${SRC_DEBUG})
 
 
 configure_file(vcxproj.user.in ddfix.vcxproj.user @ONLY)

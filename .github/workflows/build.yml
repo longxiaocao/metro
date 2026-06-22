@@ -54,12 +54,13 @@ jobs:
       # -------------------- 4. configure --------------------
       # 注：BUILD_TESTS=ON 是 Phase 5.3 引入，Phase 6.1 开启
       #      fxc.exe 由 Visual Studio + Windows SDK 自带
+      # Phase 7: 用 Visual Studio 17 2022 generator（最稳定，避免 Ninja 与 MSVC toolchain 配置问题）
       - name: Configure CMake
         shell: pwsh
         run: |
           cmake -S . -B build `
-            -G "Ninja" `
-            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
             -DBUILD_TESTS=ON `
             -DBUILD_DDFIX_LIB=OFF `
             -DGameExe="${{ env.GAME_EXE }}" `
@@ -69,9 +70,16 @@ jobs:
           PATH: "${{ env.PATH }}"
 
       # -------------------- 5. build --------------------
+      # Phase 7: 捕获 build 输出到日志，失败时显示最后 200 行
       - name: Build
         shell: pwsh
-        run: cmake --build build --config ${{ env.BUILD_TYPE }} -j
+        run: |
+          cmake --build build --config ${{ env.BUILD_TYPE }} -j 2>&1 | Tee-Object -FilePath build\build.log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Build failed, showing last 200 lines of build.log:"
+            Get-Content build\build.log -Tail 200
+            exit $LASTEXITCODE
+          }
 
       # -------------------- 6. test (ctest) --------------------
       # ctest 会从 build/ 跑 ddfixtests
