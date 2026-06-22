@@ -244,7 +244,8 @@ TEST(Wrapper, DeleteAddressRemovesEntry)
 	tbl.DeleteAddress<MockWrapper>(w);
 
 	// 删除后找不到
-	EXPECT_EQ(tbl.FindAddressOnly<MockWrapper>(proxy), nullptr);
+	// Phase 8.14: EXPECT_TRUE 替代 EXPECT_EQ 避开 gtest operator << 歧义
+	EXPECT_TRUE(tbl.FindAddressOnly<MockWrapper>(proxy) == nullptr);
 }
 
 TEST(Wrapper, DeleteAddressNullIsNoop)

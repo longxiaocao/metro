@@ -227,6 +227,10 @@ namespace DDRAW_HOOK
 		m_releaseDDThreadLock = GetProcAddress(ddraw_original, "ReleaseDDThreadLock");
 	}
 
+	// Phase 8.14: x64 编译时 MSVC 不支持 __asm / __declspec(naked)。
+	//   x86 保持原 naked + __asm jmp 行为（无栈帧 + 直接跳到 hook 目标）
+	//   x64 改成普通函数 + reinterpret_cast 函数指针调用（多一层栈帧，但 hook 流程一般可接受）
+#if defined(_M_IX86)
 	void __declspec(naked) FakeAcquireLock() {
 		__asm jmp DDRAW_HOOK::m_acquireDDThreadLock;
 	}
@@ -242,6 +246,14 @@ namespace DDRAW_HOOK
 	void __declspec(naked) FakeReleaseLock() {
 		__asm jmp DDRAW_HOOK::m_releaseDDThreadLock;
 	}
+#else
+	// x64 fallback
+	void FakeAcquireLock() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_acquireDDThreadLock)(); }
+	void FakeParseUnknown() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_d3DParseUnknownCommand)(); }
+	void FakeInternalLock() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_dDInternalLock)(); }
+	void FakeInternalUnlock() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_dDInternalUnlock)(); }
+	void FakeReleaseLock() { reinterpret_cast<void(*)()>(DDRAW_HOOK::m_releaseDDThreadLock)(); }
+#endif
 
 	HRESULT WINAPI FakeDirectDrawCreate(GUID FAR *lpGUID, LPDIRECTDRAW FAR *lplpDD, IUnknown FAR *pUnkOuter) {
 		//HRESULT hr = reinterpret_cast<decltype(DirectDrawCreate)*>(DDRAW_HOOK::m_directDrawCreate)(lpGUID, lplpDD, pUnkOuter);

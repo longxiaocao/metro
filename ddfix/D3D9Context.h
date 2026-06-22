@@ -6,8 +6,12 @@
 struct HWND__;
 typedef struct HWND__ *HWND;
 
-namespace ND3D9
-{
+// Phase 8.14: 把 d3dx9.h include 移到 file scope（全局），避免被 namespace ND3D9
+//  包装后把 windows.h 的 typedef（DWORD/IDirect3DDevice9 等）困在 ND3D9 内。
+//  之前 line 9-32 在 namespace ND3D9 { ... } 内 include d3dx9.h，间接把 windows.h
+//  的内容拉到 ND3D9 namespace，导致其他 cpp 找不到 DWORD 报 C2061，
+//  D3D9Context.cpp:289 GetDevice 报 C2872 IDirect3DDevice9 ambiguous。
+//  移到 file scope 后所有 typedef 都是全局的，所有 namespace 都能正常查找。
 #undef _D3D9_H_
 #undef DIRECT3D_VERSION
 #undef D3DFVF_POSITION_MASK
@@ -29,7 +33,6 @@ namespace ND3D9
 #undef D3DMATRIX_DEFINED
 #include <d3dx9.h>
 #include "Common/SmartPointer.h"
-}
 
 namespace ND3DX9
 {
