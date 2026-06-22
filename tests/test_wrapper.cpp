@@ -173,14 +173,15 @@ TEST(Wrapper, SaveAndFindReturnsSamePointer)
 TEST(Wrapper, FindAddressNullReturnsNull)
 {
 	AddressLookupTable tbl;
-	EXPECT_EQ(tbl.FindAddress<MockWrapper>(nullptr), nullptr);
-	EXPECT_EQ(tbl.FindAddressOnly<MockWrapper>(nullptr), nullptr);
+	// Phase 8.11: 用 EXPECT_TRUE 替代 EXPECT_EQ，避开 gtest 14.x 在 MockWrapper* + nullptr 上的 operator << 歧义
+	EXPECT_TRUE(tbl.FindAddress<MockWrapper>(nullptr) == nullptr);
+	EXPECT_TRUE(tbl.FindAddressOnly<MockWrapper>(nullptr) == nullptr);
 }
 
 TEST(Wrapper, FindAddressOnlyMissReturnsNull)
 {
 	AddressLookupTable tbl;
-	EXPECT_EQ(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x9999)), nullptr);
+	EXPECT_TRUE(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x9999)) == nullptr);
 }
 
 // ---------- 引用计数 ----------
@@ -298,7 +299,8 @@ TEST(Wrapper, SaveNullWrapperIgnored)
 {
 	AddressLookupTable tbl;
 	tbl.SaveAddress<MockWrapper>(nullptr, reinterpret_cast<void*>(0x7000));
-	EXPECT_EQ(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x7000)), nullptr);
+	// Phase 8.11: EXPECT_TRUE 替代 EXPECT_EQ 避开 gtest operator << 歧义
+	EXPECT_TRUE(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x7000)) == nullptr);
 }
 
 TEST(Wrapper, SaveNullProxyIgnored)
@@ -307,7 +309,8 @@ TEST(Wrapper, SaveNullProxyIgnored)
 	MockWrapper* w = new MockWrapper(8); w->AddRef();
 	tbl.SaveAddress<MockWrapper>(w, nullptr);
 	// nullptr 不该被加入；用别的 proxy 查应 miss
-	EXPECT_EQ(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x8000)), nullptr);
+	// Phase 8.11: EXPECT_TRUE 替代 EXPECT_EQ 避开 gtest operator << 歧义
+	EXPECT_TRUE(tbl.FindAddressOnly<MockWrapper>(reinterpret_cast<void*>(0x8000)) == nullptr);
 	w->Release();
 }
 

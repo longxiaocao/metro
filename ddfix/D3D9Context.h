@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <assert.h>
+#include <string>  // Phase 8.11: IResource9Factory::GetType() 返回 std::string
 
 struct HWND__;
 typedef struct HWND__ *HWND;
