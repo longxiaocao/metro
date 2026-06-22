@@ -7,6 +7,17 @@
 //   - 加 LOG_DEBUG/INFO/WARN/ERROR/FATAL 宏简写
 //   - 保留旧 Log::LOG / Log()<< / logf 三个旧接口（向后兼容）
 
+// Phase 8.13: Windows 头文件（winuser.h）#define ERROR 0 / FATAL ...
+//   会破坏 enum class 成员名 ERROR / FATAL。Logging.h 依赖调用方先 #include <windows.h>
+//   （项目内 5 个 cpp 都已遵守此顺序），所以这里 #undef 是安全的。
+//   grep 全项目无 cpp 使用裸 ERROR 宏，#undef 不会破坏其他代码。
+#ifdef ERROR
+#undef ERROR
+#endif
+#ifdef FATAL
+#undef FATAL
+#endif
+
 #include <fstream>
 #include <mutex>
 #include <stdarg.h>

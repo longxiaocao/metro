@@ -34,6 +34,10 @@ class LookupTableObject
 public:
 	virtual ~LookupTableObject() = default;
 	int refCount = 0;
+	// Phase 8.13: mock 必须提供 DeleteMe()，对齐 prod 的 AddressLookupTableObject
+	//   prod 通过 AddressLookupTableObject::DeleteMe() 释放包装对象
+	//   mock 简化用 delete this 即可
+	virtual void DeleteMe() { delete this; }
 };
 
 // 模拟 AddRef / Release
