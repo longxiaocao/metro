@@ -1,19 +1,30 @@
 #pragma once
 
-// Phase 8.20: 修复 D3DMATERIAL9 结构在 d3d9types.h 编译失败（C3646 / C4430）问题。
+// Phase 8.21: 修复 d3d9types.h 被 DIRECT3D_VERSION 保护跳过,导致
+//   D3DMATERIAL9 / D3DCOLORVALUE / D3DDEVTYPE 等类型未定义的问题。
 //
-// 根因：原代码用 `namespace ND3D9 { typedef struct _D3DMATERIAL9 D3DMATERIAL9; }`
-//       做前向声明，意图给 `ND3D9::D3DMATERIAL9*` 提供类型签名。但这会在
-//       d3d9types.h 编译 _D3DMATERIAL9 结构体之前，让编译器认为 `_D3DMATERIAL9`
-//       已经是 class 类型（C++ 前向声明默认为 class），导致 d3d9types.h 后续的
-//       `struct _D3DMATERIAL9 { D3DCOLORVALUE Diffuse; ... }` 把 Diffuse 等
-//       字段当成 class override 成员（C3646 'Diffuse': unknown override specifier）。
+// 根因链:
+//   1) ddraw.h 包含 <d3d.h> (在 dx6 namespace 内),d3d.h 自身会
+//      #define DIRECT3D_VERSION 0x0600 (DX6),这个 #define 是全局的
+//      (#define 不受 namespace 约束)。
+//   2) <d3d9types.h> / <d3d9caps.h> / <d3d9.h> 头部都有
+//      #if (DIRECT3D_VERSION >= 0x0900) 守护,版本不足时整个头文件被 #if/#endif 跳过,
+//      所有 D3D9 类型/接口都不展开。
+//   3) D3D9Context.h 通过 #undef+重新 #define 强制 DIRECT3D_VERSION=0x0900
+//      解决了它自己 TU 的问题,但 IDirect3DMaterial3.h 在 D3D9Context.h 之前
+//      被 ddraw.h 间接 include,DIRECT3D_VERSION 还是 0x0600。
+//   4) 因此在 IDirect3DMaterial3.h 直接 #include <d3d9types.h> 时,
+//      d3d9types.h 整个被跳过,D3DMATERIAL9 / D3DCOLORVALUE 都未定义
+//      (CI #26 错误:d3d9types.h 跳过 → d3d9caps.h D3DDEVTYPE 未定义 →
+//       d3d9.h D3DCOLOR 未定义 → IDirect3DMaterial3.h:39 报 C2061)。
 //
-// 修复：移除前向声明，直接 include d3d9types.h（d3dtypes.h 已被 ddraw.h 包裹到
-//       dx6 命名空间，避免了 _D3DFILLMODE / _D3DBLEND 等枚举重定义），让 d3d9types.h
-//       在全局命名空间完整定义 D3DMATERIAL9 / D3DCOLORVALUE 等类型。
-//       调用方（IDirect3DDevice3.cpp）原本用 `ND3D9::D3DMATERIAL9 mat9` 局部变量，
-//       改为直接 `D3DMATERIAL9 mat9`（d3d9types.h 在全局命名空间）。
+// 修复:include d3d9types.h 之前强制覆盖 DIRECT3D_VERSION = 0x0900,
+//      与 D3D9Context.h 保持一致。d3dtypes.h 的枚举 (DX6) 已在 ddraw.h 的
+//      dx6 namespace 内,d3d9types.h 枚举 (DX9) 在全局,两个 namespace 互不冲突。
+#if !defined(DIRECT3D_VERSION) || DIRECT3D_VERSION < 0x0900
+#undef DIRECT3D_VERSION
+#define DIRECT3D_VERSION 0x0900
+#endif
 #include <d3d9types.h>
 
 class m_IDirect3DMaterial3 : public dx6::IDirect3DMaterial3, public AddressLookupTableObject
