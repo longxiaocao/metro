@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -161,7 +161,11 @@ HRESULT m_IDirect3DViewport3::AddLight(dx6::LPDIRECT3DLIGHT a)
 		D3DLIGHT9 light9 = *light->GetLight9();
 		auto device = WrapperAddressLookupTable->FindWrapperOnly<m_IDirect3DDevice3>(dx6::IID_IDirect3DDevice3);
 		auto lightAmbient = device->GetLightAmbient();
-		light9.Ambient = lightAmbient;
+		// Phase 8.25.12: lightAmbient 是 dx6::D3DCOLORVALUE, 逐字段赋值到全局 D3DCOLORVALUE
+		light9.Ambient.r = lightAmbient.r;
+		light9.Ambient.g = lightAmbient.g;
+		light9.Ambient.b = lightAmbient.b;
+		light9.Ambient.a = lightAmbient.a;
 		ND3D9::D3D9Context::Instance()->GetDevice()->SetLight(i, &light9);
 		ND3D9::D3D9Context::Instance()->GetDevice()->LightEnable(i, TRUE);
 		break;
@@ -295,6 +299,10 @@ HRESULT m_IDirect3DViewport3::GetBackgroundDepth2(LPDIRECTDRAWSURFACE4 * a, LPBO
 
 HRESULT m_IDirect3DViewport3::Clear2(DWORD dwCount, dx6::LPD3DRECT lpRects, DWORD dwFlags, DWORD dwColor, dx6::D3DVALUE dvZ, DWORD dwStencil)
 {
-	ND3D9::D3D9Context::Instance()->GetDevice()->Clear(dwCount, lpRects, dwFlags, dwColor, dvZ, dwStencil);
+	// Phase 8.25.12: dx6::LPD3DRECT (dx6::D3DRECT*) 与 const D3DRECT* 内存布局一致,
+	//   但 C++ 类型系统认为是不同类型 (Wine typedef vs d3d9types.h typedef)。
+	//   用 reinterpret_cast 转换, 调用方保证矩形内存连续 (Clear2 协议)。
+	ND3D9::D3D9Context::Instance()->GetDevice()->Clear(dwCount,
+		reinterpret_cast<const D3DRECT*>(lpRects), dwFlags, dwColor, dvZ, dwStencil);
 	return DD_OK;
 }

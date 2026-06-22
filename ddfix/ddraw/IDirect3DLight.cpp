@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -84,9 +84,19 @@ HRESULT m_IDirect3DLight::SetLight(dx6::LPD3DLIGHT a)
 
 		D3DLIGHT9 light9 = { 0 };
 		light9.Type = (D3DLIGHTTYPE) a->dltType;
-		light9.Diffuse = a->dcvColor;
-		light9.Position = a->dvPosition;
-		light9.Direction = a->dvDirection;
+		// Phase 8.25.12: a->dcvColor (dx6::D3DCOLORVALUE) 与 light9.Diffuse (D3DCOLORVALUE) 内存布局一致,
+		//   但 C++ 类型不同。逐字段赋值避免 reinterpret_cast。
+		light9.Diffuse.r = a->dcvColor.r;
+		light9.Diffuse.g = a->dcvColor.g;
+		light9.Diffuse.b = a->dcvColor.b;
+		light9.Diffuse.a = a->dcvColor.a;
+		// Phase 8.25.12: a->dvPosition / dvDirection 是 dx6::D3DVECTOR, light9.Position / Direction 是全局 D3DVECTOR
+		light9.Position.x = a->dvPosition.x;
+		light9.Position.y = a->dvPosition.y;
+		light9.Position.z = a->dvPosition.z;
+		light9.Direction.x = a->dvDirection.x;
+		light9.Direction.y = a->dvDirection.y;
+		light9.Direction.z = a->dvDirection.z;
 		light9.Range = a->dvRange;
 		light9.Falloff = a->dvFalloff;
 		light9.Attenuation0 = a->dvAttenuation0;
