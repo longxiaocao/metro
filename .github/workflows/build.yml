@@ -94,31 +94,34 @@ jobs:
             foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
           }
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          # 用 Start-Process 捕获 stdout/stderr（PowerShell 7+ 也支持 2>&1 |）
-          $proc = Start-Process -FilePath "cmake" -ArgumentList @(
-            "-S", "."
-            "-B", "build"
-            "-G", "Visual Studio 17 2022"
-            "-A", "x64"
-            "-DBUILD_TESTS=ON"
-            "-DBUILD_DDFIX_LIB=OFF"
-            "-DGameExe=`"${{ env.GAME_EXE }}`""
-            "-DGameStartupArgs=`"${{ env.GAME_STARTUP_ARGS }}`""
-          ) -NoNewWindow -Wait -PassThru -RedirectStandardOutput build\configure.out -RedirectStandardError build\configure.err
-          # 合并并显示
-          if (Test-Path build\configure.out) { Get-Content build\configure.out }
-          if (Test-Path build\configure.err) { Write-Host "--- stderr ---"; Get-Content build\configure.err }
-          "---" | Out-File -Append build\configure.out
-          if (Test-Path build\configure.err) { Get-Content build\configure.err | Out-File -Append build\configure.out }
-          $cmakeExit = $proc.ExitCode
+          # Phase 8.6: 用 & + 数组展开调用 cmake，避免 Start-Process 对带空格参数的分词 bug
+          #   原实现：Start-Process -ArgumentList @("-G", "Visual Studio 17 2022", ...)
+          #   现象：cmake 收到 "Visual" 而非 "Visual Studio 17 2022"，报 "Could not create named generator Visual"
+          #   修复：& cmake @args 走 PowerShell 7+ 的 splat 路径，整串作为单个参数传递
+          $cmakeArgs = @(
+            '-S', '.'
+            '-B', 'build'
+            '-G', 'Visual Studio 17 2022'
+            '-A', 'x64'
+            '-DBUILD_TESTS=ON'
+            '-DBUILD_DDFIX_LIB=OFF'
+            "-DGameExe=$($env:GAME_EXE)"
+            "-DGameStartupArgs=$($env:GAME_STARTUP_ARGS)"
+          )
+          # *> 合并 stdout+stderr 到 configure.log（PowerShell 7+ 支持）
+          & cmake @cmakeArgs *> build\configure.log
+          $cmakeExit = $LASTEXITCODE
           Write-Host "::notice::CMake exit code: $cmakeExit"
+          if (Test-Path build\configure.log) {
+            Write-Host "--- CMake output (last 80 lines) ---"
+            Get-Content build\configure.log -Tail 80
+          }
           if ($cmakeExit -ne 0) {
-            # 把错误最后 80 行作为 annotation 展示（保留完整 generator 列表）
-            if (Test-Path build\configure.err) {
-              $errTail = Get-Content build\configure.err -Tail 80
+            if (Test-Path build\configure.log) {
+              $errTail = Get-Content build\configure.log -Tail 80
               foreach ($line in $errTail) { Write-Host "::error::$line" }
             } else {
-              Write-Host "::error::CMake configure failed (no stderr captured)"
+              Write-Host "::error::CMake configure failed (no log captured)"
             }
             exit $cmakeExit
           }
