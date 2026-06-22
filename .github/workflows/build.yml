@@ -117,9 +117,14 @@ jobs:
           & cmake @cmakeArgs *> build\configure.log
           $cmakeExit = $LASTEXITCODE
           Write-Host "::notice::CMake exit code: $cmakeExit"
+          # Phase 8.8: 把 configure.log 完整内容写入 step summary（不受 annotations 100 行限制）
           if (Test-Path build\configure.log) {
             Write-Host "--- CMake output (last 80 lines) ---"
             Get-Content build\configure.log -Tail 80
+            if ($env:GITHUB_STEP_SUMMARY) {
+              "`n## Configure CMake log`n``````n$((Get-Content build\configure.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
+                Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+            }
           }
           if ($cmakeExit -ne 0) {
             if (Test-Path build\configure.log) {
