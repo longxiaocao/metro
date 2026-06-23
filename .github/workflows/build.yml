@@ -268,27 +268,40 @@ jobs:
           #   ddfixtests.exe 实际输出到 build\bin\Release\, 不是 build\tests\Release\.
           #   之前找 build\tests\Release\ddfixtests.exe 永远 not found (CI #44-#48).
           $exe = "build\bin\${{ env.BUILD_TYPE }}\ddfixtests.exe"
-          if (Test-Path $exe) {
-            & $exe --list
-            & $exe
-            $exitCode = $LASTEXITCODE
-            Write-Host "::notice::ddfixtests exit code: $exitCode"
-            if ($exitCode -ne 0) {
-              Write-Host "::error::ddfixtests failed with exit code $exitCode"
-              exit $exitCode
-            }
-          } else {
-            # 兜底：尝试其他可能路径, 列出 build/bin 内容帮诊断
+          if (-not (Test-Path $exe)) {
             Write-Host "::error::ddfixtests.exe not found at $exe"
             if (Test-Path build\bin) {
               Write-Host "::notice::build\bin contents:"
               Get-ChildItem build\bin -Recurse -ErrorAction SilentlyContinue | Select-Object FullName | Out-String
             }
-            if (Test-Path build\tests) {
-              Write-Host "::notice::build\tests contents:"
-              Get-ChildItem build\tests -Recurse -ErrorAction SilentlyContinue | Select-Object FullName | Out-String
-            }
             exit 1
+          }
+          # Phase 8.25.24: 先跑 --list, 验证启动 + 测试注册不崩. 确认 crash 源是
+          #   startup (静态初始化) 还是 test 期间.
+          Write-Host "::group::ddfixtests --list (registration sanity)"
+          & $exe --list 2>&1 | Tee-Object -FilePath build\test_list.log
+          $listExit = $LASTEXITCODE
+          Write-Host "::endgroup::"
+          if ($listExit -ne 0) {
+            Write-Host "::error::ddfixtests --list failed exit=$listExit (heap corruption / startup crash)"
+            exit $listExit
+          }
+          # 跑全部测试
+          Write-Host "::group::ddfixtests (full run)"
+          & $exe 2>&1 | Tee-Object -FilePath build\test_full.log
+          $exitCode = $LASTEXITCODE
+          Write-Host "::endgroup::"
+          Write-Host "::notice::ddfixtests exit code: $exitCode"
+          if ($exitCode -ne 0) {
+            Write-Host "::error::ddfixtests failed with exit code $exitCode"
+            # 提取测试日志中的 FAIL 行
+            if (Test-Path build\test_full.log) {
+              $fails = Get-Content build\test_full.log | Select-String -Pattern "FAIL" | Select-Object -First 20
+              foreach ($f in $fails) {
+                Write-Host "::error::$($f.ToString())"
+              }
+            }
+            exit $exitCode
           }
 
       # -------------------- 7. 上传构建产物 --------------------
