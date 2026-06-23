@@ -151,9 +151,21 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
+          # Phase 8.25.17: 把 fxc.exe 路径加入 PATH, 防止 add_custom_command 调 fxc 时找不到.
+          #   CI 上 ilammy/msvc-dev-cmd 已激活 MSVC env, 但 PATH 不一定包含 Windows SDK bin.
+          #   find_program 在 Configure 阶段用绝对路径, 但 VS multi-config generator 在
+          #   Build 阶段会重启 cmd 时 PATH 可能丢失.
+          $sdkRoot = "C:\Program Files (x86)\Windows Kits\10\bin"
+          if (Test-Path $sdkRoot) {
+            $fxcDirs = Get-ChildItem $sdkRoot -Directory -ErrorAction SilentlyContinue |
+                       Where-Object { Test-Path (Join-Path $_.FullName "x64\fxc.exe") } |
+                       ForEach-Object { $_.FullName + "\x64" }
+            foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
+          }
           cmake --build build --config ${{ env.BUILD_TYPE }} -j 2>&1 | Tee-Object -FilePath build\build.log
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "::error::Build failed, exit code $LASTEXITCODE"
+          $buildExit = $LASTEXITCODE
+          if ($buildExit -ne 0) {
+            Write-Host "::error::Build failed, exit code $buildExit"
             if (Test-Path build\build.log) {
               # Phase 8.10: 提取所有 MSVC error 行（最多 30 条）作为 annotation
               $msvcErrors = Get-Content build\build.log | Select-String -Pattern "error\s" | Select-Object -First 30
@@ -168,7 +180,14 @@ jobs:
             } else {
               Write-Host "::error::Build failed (no build.log captured)"
             }
-            exit $LASTEXITCODE
+            # Phase 8.25.17: 把 build.log 的 tail 单独上传为 artifact, 即便 fail 也能下载.
+            #   解决: GitHub web UI 没登录看不到 build step annotation, 但 artifact 公开.
+            if (Test-Path build\build.log) {
+              New-Item -ItemType Directory -Force -Path build\ci-artifacts | Out-Null
+              Copy-Item build\build.log build\ci-artifacts\build.log -Force
+              Write-Host "::notice::build.log copied to build\ci-artifacts\"
+            }
+            exit $buildExit
           }
 
       # -------------------- 6. test (ctest) --------------------
@@ -225,6 +244,7 @@ jobs:
             build/configure.out
             build/configure.err
             build/build.log
+            build/ci-artifacts/**
           if-no-files-found: ignore
           retention-days: 7
 
