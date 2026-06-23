@@ -26,6 +26,10 @@
 // 这里仅保留一行调用包装，宏在多个地方使用，避免逐处改写。
 #define USE_SOFTWARE_WRAPPER_9 (NDDFIX::Config::ConfigManager::Instance()->GetRender().useSoftwareBlt)
 
+// Phase 8.25.13: PERF_SCOPE 宏展开为 unqualified `PerfScopeGuard`, 类在 NDDFIX::Debug
+//   命名空间内, 在文件作用域 using 声明以解析标识符。
+using NDDFIX::Debug::PerfScopeGuard;
+
 
 template <bool HAVESRCCOLORKEY, bool HAVEDESTCOLORKEY, bool CHECKDIRTY = false>
 static void LineProcess(dx6::D3DCOLOR* srcLine, dx6::D3DCOLOR* destLine, int width, DWORD srcColorKey, DWORD destColorKey)
@@ -770,7 +774,8 @@ private:
 		d3dRect.x2 = rect->right;
 		d3dRect.y1 = rect->top;
 		d3dRect.y2 = rect->bottom;
-		m_d3d9Context->GetDevice()->Clear(1, &d3dRect, D3DCLEAR_TARGET, color, 0.0f, 0.0);
+		// Phase 8.25.13: dx6::D3DRECT* 与 const D3DRECT* 内存布局一致, reinterpret_cast 转换
+		m_d3d9Context->GetDevice()->Clear(1, reinterpret_cast<const D3DRECT*>(&d3dRect), D3DCLEAR_TARGET, color, 0.0f, 0.0);
 
 
 		m_d3d9Context->GetDevice()->SetRenderTarget(0, oldRenderTarget);
