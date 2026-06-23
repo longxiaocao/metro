@@ -333,6 +333,14 @@ TEST(Wrapper, NonCopyableWrapperWorks)
 TEST(Wrapper, StressInsertAndLookup)
 {
 	// 1000 次插入 + 1000 次查找，验证不漏
+	//
+	// Phase 8.25.27: 修 double free. 之前写法是 AddRef + Release 模拟 COM 引用计数,
+	//   但 w->Release() 在 refCount==0 时 delete this, 之后 tbl 出作用域时 AutoDelete
+	//   析构会再次 DeleteMe(entry) -> double free / heap corruption.
+	// 修法: 不调 AddRef/Release, 让 tbl 析构时统一 DeleteMe (delete this) 清场.
+	//   mock 的 LookupTableObject::DeleteMe() == delete this, 不依赖 refCount.
+	//   prod 真实代码用 COM AddRef/Release 维护引用, 何时 Delete 由调用方控制,
+	//   wrapper 类自身不重载 DeleteMe; 测试不模拟 COM 语义, 只验证 map 的存/取/不漏.
 	AddressLookupTable tbl;
 	const int N = 1000;
 	std::vector<MockWrapper*> objs;
@@ -340,7 +348,6 @@ TEST(Wrapper, StressInsertAndLookup)
 	for (int i = 0; i < N; ++i)
 	{
 		MockWrapper* w = new MockWrapper(i);
-		w->AddRef();
 		tbl.SaveAddress<MockWrapper>(w, reinterpret_cast<void*>(static_cast<uintptr_t>(i + 1) * 16));
 		objs.push_back(w);
 	}
@@ -351,6 +358,5 @@ TEST(Wrapper, StressInsertAndLookup)
 		EXPECT_EQ(found, objs[i]);
 		EXPECT_EQ(found->x, i);
 	}
-	// 清场
-	for (auto* w : objs) w->Release();
+	// 清场由 tbl 析构统一 DeleteMe, 不在循环里手动 Release.
 }
