@@ -222,19 +222,23 @@ inline bool RunAllTests()
 		state.currentTest = entry.name;
 
 		std::printf("[SingleTest] RUN  %s.%s\n", entry.group, entry.name);
+		std::fflush(stdout);  // Phase 8.25.25: 立即刷出, 避免 crash 时丢失 RUN 行
 		entry.func();
+		std::fflush(stdout);
 
 		stats.totalAsserts += state.totalAssert;
 		if (state.failCount == 0)
 		{
 			std::printf("[SingleTest] PASS %s.%s (%d asserts)\n",
 				entry.group, entry.name, state.totalAssert);
+			std::fflush(stdout);
 			++stats.pass;
 		}
 		else
 		{
 			std::printf("[SingleTest] FAIL %s.%s (%d/%d asserts failed)\n",
 				entry.group, entry.name, state.failCount, state.totalAssert);
+			std::fflush(stdout);
 			++stats.fail;
 		}
 	}
