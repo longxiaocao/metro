@@ -294,12 +294,27 @@ jobs:
           Write-Host "::notice::ddfixtests exit code: $exitCode"
           if ($exitCode -ne 0) {
             Write-Host "::error::ddfixtests failed with exit code $exitCode"
-            # 提取测试日志中的 FAIL 行
+            # Phase 8.25.26: 把 test_full.log 内容 cat 到 ::error:: annotation
+            #   让 WebFetch / GitHub UI 能抓到具体哪个 test crash.
             if (Test-Path build\test_full.log) {
-              $fails = Get-Content build\test_full.log | Select-String -Pattern "FAIL" | Select-Object -First 20
-              foreach ($f in $fails) {
-                Write-Host "::error::$($f.ToString())"
+              # 先输出已运行的 test (RUN/PASS 行, 标识最后跑到的 test)
+              $ranLines = Get-Content build\test_full.log |
+                          Select-String -Pattern "\[SingleTest\] (RUN|PASS|FAIL)" |
+                          Select-Object -Last 20
+              foreach ($l in $ranLines) {
+                $m = $l.ToString()
+                if ($m.Length -gt 900) { $m = $m.Substring(0, 900) + "..." }
+                Write-Host "::notice::$m"
               }
+              # 最后 30 行 raw log
+              $tail = Get-Content build\test_full.log -Tail 30
+              foreach ($l in $tail) {
+                $m = $l.ToString()
+                if ($m.Length -gt 900) { $m = $m.Substring(0, 900) + "..." }
+                Write-Host "::error::$m"
+              }
+            } else {
+              Write-Host "::error::test_full.log not found"
             }
             exit $exitCode
           }
