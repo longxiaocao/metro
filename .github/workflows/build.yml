@@ -263,7 +263,11 @@ jobs:
         shell: pwsh
         if: always()  # 即使 ctest fail 仍跑，保留诊断输出
         run: |
-          $exe = "build\tests\${{ env.BUILD_TYPE }}\ddfixtests.exe"
+          # Phase 8.25.21: 修复路径错误. 顶层 CMakeLists.txt line 27 设
+          #   CMAKE_RUNTIME_OUTPUT_DIRECTORY = ${CMAKE_BINARY_DIR}/bin, 所以
+          #   ddfixtests.exe 实际输出到 build\bin\Release\, 不是 build\tests\Release\.
+          #   之前找 build\tests\Release\ddfixtests.exe 永远 not found (CI #44-#48).
+          $exe = "build\bin\${{ env.BUILD_TYPE }}\ddfixtests.exe"
           if (Test-Path $exe) {
             & $exe --list
             & $exe
@@ -274,7 +278,16 @@ jobs:
               exit $exitCode
             }
           } else {
+            # 兜底：尝试其他可能路径, 列出 build/bin 内容帮诊断
             Write-Host "::error::ddfixtests.exe not found at $exe"
+            if (Test-Path build\bin) {
+              Write-Host "::notice::build\bin contents:"
+              Get-ChildItem build\bin -Recurse -ErrorAction SilentlyContinue | Select-Object FullName | Out-String
+            }
+            if (Test-Path build\tests) {
+              Write-Host "::notice::build\tests contents:"
+              Get-ChildItem build\tests -Recurse -ErrorAction SilentlyContinue | Select-Object FullName | Out-String
+            }
             exit 1
           }
 
