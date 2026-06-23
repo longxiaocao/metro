@@ -162,32 +162,45 @@ jobs:
                        ForEach-Object { $_.FullName + "\x64" }
             foreach ($d in $fxcDirs) { $env:PATH = "$d;$env:PATH" }
           }
-          cmake --build build --config ${{ env.BUILD_TYPE }} -j 2>&1 | Tee-Object -FilePath build\build.log
-          $buildExit = $LASTEXITCODE
-          if ($buildExit -ne 0) {
-            Write-Host "::error::Build failed, exit code $buildExit"
-            if (Test-Path build\build.log) {
-              # Phase 8.10: 提取所有 MSVC error 行（最多 30 条）作为 annotation
-              $msvcErrors = Get-Content build\build.log | Select-String -Pattern "error\s" | Select-Object -First 30
-              foreach ($line in $msvcErrors) { Write-Host "::error::$line" }
-              Write-Host "::error::--- Last 100 lines of build.log (full log in step summary) ---"
-              Get-Content build\build.log -Tail 100
-              # 把 build.log 完整内容写入 step summary（不受 annotations 100 行限制）
-              if ($env:GITHUB_STEP_SUMMARY) {
-                "`n## Build log`n``````n$((Get-Content build\build.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
-                  Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-              }
-            } else {
-              Write-Host "::error::Build failed (no build.log captured)"
+          # Phase 8.25.18: 显式构建 ddfix + ddfixtests, 把每个 target 的错误分开捕获,
+          #   避免 ddfixtests 编译/链接错误被 ddfix.dll 错误吞掉 (CI #44/45 只看到
+          #   ddfixtests.exe not found, 看不到具体编译/链接错误).
+          Write-Host "::group::Building ddfix.dll (SHARED library)"
+          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfix -j 2>&1 | Tee-Object -FilePath build\build_ddfix.log
+          $ddfixExit = $LASTEXITCODE
+          Write-Host "::endgroup::"
+          if ($ddfixExit -ne 0) {
+            Write-Host "::error::ddfix.dll build failed, exit code $ddfixExit"
+            Get-Content build\build_ddfix.log -Tail 100
+            if ($env:GITHUB_STEP_SUMMARY) {
+              "`n## ddfix build log`n``````n$((Get-Content build\build_ddfix.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
+                Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
             }
-            # Phase 8.25.17: 把 build.log 的 tail 单独上传为 artifact, 即便 fail 也能下载.
-            #   解决: GitHub web UI 没登录看不到 build step annotation, 但 artifact 公开.
-            if (Test-Path build\build.log) {
-              New-Item -ItemType Directory -Force -Path build\ci-artifacts | Out-Null
-              Copy-Item build\build.log build\ci-artifacts\build.log -Force
-              Write-Host "::notice::build.log copied to build\ci-artifacts\"
+            New-Item -ItemType Directory -Force -Path build\ci-artifacts | Out-Null
+            Copy-Item build\build_ddfix.log build\ci-artifacts\build_ddfix.log -Force
+            exit $ddfixExit
+          }
+          Write-Host "::group::Building ddfixtests.exe"
+          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfixtests -j 2>&1 | Tee-Object -FilePath build\build_ddfixtests.log
+          $testsExit = $LASTEXITCODE
+          Write-Host "::endgroup::"
+          if ($testsExit -ne 0) {
+            Write-Host "::error::ddfixtests.exe build failed, exit code $testsExit"
+            Get-Content build\build_ddfixtests.log -Tail 100
+            if ($env:GITHUB_STEP_SUMMARY) {
+              "`n## ddfixtests build log`n``````n$((Get-Content build\build_ddfixtests.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
+                Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
             }
-            exit $buildExit
+            New-Item -ItemType Directory -Force -Path build\ci-artifacts | Out-Null
+            Copy-Item build\build_ddfixtests.log build\ci-artifacts\build_ddfixtests.log -Force
+            exit $testsExit
+          }
+          # 把两个 log 合并成 build.log, 保持向后兼容
+          if (Test-Path build\build_ddfix.log) { Get-Content build\build_ddfix.log | Out-File -Append -FilePath build\build.log -Encoding utf8 }
+          if (Test-Path build\build_ddfixtests.log) { Get-Content build\build_ddfixtests.log | Out-File -Append -FilePath build\build.log -Encoding utf8 }
+          if (Test-Path build\build.log) {
+            New-Item -ItemType Directory -Force -Path build\ci-artifacts | Out-Null
+            Copy-Item build\build.log build\ci-artifacts\build.log -Force
           }
 
       # -------------------- 6. test (ctest) --------------------
