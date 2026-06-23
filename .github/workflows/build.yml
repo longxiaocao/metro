@@ -186,7 +186,31 @@ jobs:
           Write-Host "::endgroup::"
           if ($testsExit -ne 0) {
             Write-Host "::error::ddfixtests.exe build failed, exit code $testsExit"
-            Get-Content build\build_ddfixtests.log -Tail 100
+            # Phase 8.25.19: 把 build_ddfixtests.log 中所有 MSVC error / fatal error
+            #   行提取为 ::error:: 注解, 让 WebFetch / GitHub UI annotation 能抓到具体
+            #   编译错误。之前只 echo 到 stdout (Get-Content -Tail 100), WebFetch 抓不到。
+            if (Test-Path build\build_ddfixtests.log) {
+              $msvcErrors = Get-Content build\build_ddfixtests.log |
+                            Select-String -Pattern "error\s+(C|LNK)[0-9]+|fatal error" |
+                            Select-Object -First 20
+              foreach ($line in $msvcErrors) {
+                # GitHub annotation 限定一行 ≤ 1000 字符, 截断
+                $msg = $line.ToString()
+                if ($msg.Length -gt 900) { $msg = $msg.Substring(0, 900) + "..." }
+                Write-Host "::error::$msg"
+              }
+              # 如果没有 MSVC error 行, 至少输出 log 末尾 50 行让 GitHub UI 可见
+              if (-not $msvcErrors -or $msvcErrors.Count -eq 0) {
+                $tail = Get-Content build\build_ddfixtests.log -Tail 50
+                foreach ($line in $tail) {
+                  $msg = $line.ToString()
+                  if ($msg.Length -gt 900) { $msg = $msg.Substring(0, 900) + "..." }
+                  Write-Host "::error::$msg"
+                }
+              }
+            } else {
+              Write-Host "::error::build_ddfixtests.log not found"
+            }
             if ($env:GITHUB_STEP_SUMMARY) {
               "`n## ddfixtests build log`n``````n$((Get-Content build\build_ddfixtests.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
                 Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
