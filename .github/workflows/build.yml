@@ -166,12 +166,35 @@ jobs:
           #   避免 ddfixtests 编译/链接错误被 ddfix.dll 错误吞掉 (CI #44/45 只看到
           #   ddfixtests.exe not found, 看不到具体编译/链接错误).
           Write-Host "::group::Building ddfix.dll (SHARED library)"
-          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfix -j 2>&1 | Tee-Object -FilePath build\build_ddfix.log
+          # Phase 8.25.20: 用 *> redirect 代替 | Tee-Object, 解决 PowerShell pipeline
+          #   中 $LASTEXITCODE 反映的是 Tee-Object (0) 而非 cmake (1) 的问题, 导致
+          #   ddfixtests 编译错误永远被吞, 只看到 "exe not found".
+          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfix -j *> build\build_ddfix.log
           $ddfixExit = $LASTEXITCODE
           Write-Host "::endgroup::"
           if ($ddfixExit -ne 0) {
             Write-Host "::error::ddfix.dll build failed, exit code $ddfixExit"
-            Get-Content build\build_ddfix.log -Tail 100
+            # Phase 8.25.19: MSVC error 行提取为 ::error:: 注解
+            if (Test-Path build\build_ddfix.log) {
+              $msvcErrors = Get-Content build\build_ddfix.log |
+                            Select-String -Pattern "error\s+(C|LNK)[0-9]+|fatal error" |
+                            Select-Object -First 20
+              foreach ($line in $msvcErrors) {
+                $msg = $line.ToString()
+                if ($msg.Length -gt 900) { $msg = $msg.Substring(0, 900) + "..." }
+                Write-Host "::error::$msg"
+              }
+              if (-not $msvcErrors -or $msvcErrors.Count -eq 0) {
+                $tail = Get-Content build\build_ddfix.log -Tail 50
+                foreach ($line in $tail) {
+                  $msg = $line.ToString()
+                  if ($msg.Length -gt 900) { $msg = $msg.Substring(0, 900) + "..." }
+                  Write-Host "::error::$msg"
+                }
+              }
+            } else {
+              Write-Host "::error::build_ddfix.log not found"
+            }
             if ($env:GITHUB_STEP_SUMMARY) {
               "`n## ddfix build log`n``````n$((Get-Content build\build_ddfix.log -Raw) -replace '```', '`u0060`u0060`u0060')`n``````n" |
                 Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
@@ -181,7 +204,7 @@ jobs:
             exit $ddfixExit
           }
           Write-Host "::group::Building ddfixtests.exe"
-          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfixtests -j 2>&1 | Tee-Object -FilePath build\build_ddfixtests.log
+          cmake --build build --config ${{ env.BUILD_TYPE }} --target ddfixtests -j *> build\build_ddfixtests.log
           $testsExit = $LASTEXITCODE
           Write-Host "::endgroup::"
           if ($testsExit -ne 0) {
