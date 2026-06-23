@@ -86,9 +86,20 @@ add_dependencies(ddfix CompileColorKeyHLSLC)
 #   （LNK2019 unresolved external NDDFIX::Config::IniParser::*）。改为无条件构建。
 #   Phase 8.25.15: 改用 ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h 全路径, 与 ddfix 一致,
 #     确保 ddfix-static 也触发 fxc 生成 ColorKeyHLSLC.h, 避免 ddfix 阶段找不到。
-add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h)
-target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib ${D3DX9_LIB} dxguid.lib winmm.lib legacy_stdio_definitions.lib)
-add_dependencies(ddfix-static CompileColorKeyHLSLC)
+#   Phase 8.25.22: 限制 ddfix-static 源到 Config + Debug + Common 目录, 排除
+#     ddraw/dinput/dshow 全部 cpp. 原因: ddfixtests 不需要 ddraw proxy 包装, 而
+#     ddraw/*.cpp 引入了全局 ProxyAddressLookupTable + ddraw.h 头链, 在 .exe
+#     启动时构造触发 STATUS_HEAP_CORRUPTION (CI #49 exit code -1073740940).
+#     只保留 ddfix-static 纯 STL 部分 (IniParser / PerfCounter / HudRenderer /
+#     ImGuiBackend) + Common (Logging / SmartPointer / Wrapper), 足够 test 链接.
+set(STATIC_SRC_DRAW_SRC ${SRC_CONFIG} ${SRC_DEBUG} ${SRC_COMMON})
+# ddraw/ 头文件仍然需要 include (Logging.h 等可能引用), 但只编 Config/Debug/Common 的 cpp.
+# 注意: ddraw 头依赖 d3d9types.h 等, 但我们不编译 ddraw cpp, 所以不会触发 dx6:: 冲突.
+# Phase 8.25.23: ddfix-static 不再依赖 ColorKeyHLSLC.h. 该头只被 D3D9Context.cpp +
+#   IDirectDrawSurface4.cpp 引用, 都不在 ddfix-static 源中. 移除依赖避免 ddfix-static
+#   触发 fxc 生成 (ddfix-static 不需要).
+add_library(ddfix-static STATIC ${STATIC_SRC_DRAW_SRC})
+target_link_libraries(ddfix-static minhook d3d9.lib ${D3DX9_LIB} dxguid.lib winmm.lib legacy_stdio_definitions.lib)
 set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
 
 # 向后兼容：BUILD_DDFIX_LIB 选项保留但变为 no-op（永远 ON）
