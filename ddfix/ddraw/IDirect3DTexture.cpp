@@ -22,6 +22,15 @@
 //   旧实现用 __LINE__ 差值计数，对"必须在文件末尾留 4 行空行"极脆，
 //   任何插入/删除都会让 g_numtexformats 错位。
 //   现改为 static constexpr 派生，编译器自行算长度，零运行时开销。
+// Phase 8.25.14: 把 `static constexpr int` 改为普通 `int`, 修复 CI #42 LNK2019 unresolved
+//   external `g_numtexformats` 错误。
+//   根因: static constexpr 在 C++17 之前有 internal linkage, 即使 ODR-used 也不会生成
+//     external symbol; IDirect3DDevice3.cpp line 329 用 `extern int g_numtexformats;` 引用
+//     时 link 找不到符号。
+//   方案: 改为普通 `int g_numtexformats` (无 static, 无 const), 让 MSVC 生成 external
+//     symbol, IDirect3DDevice3.cpp 中的 `extern int g_numtexformats;` 即可 resolve。
+//   注意: `int` 而非 `int const`, 因为 IDirect3DDevice3.cpp 已经声明 `extern int`, 保持
+//     类型一致避免 C4221 / C4229 warning。
 #include <iterator>  // std::size
 const DDPIXELFORMAT texformats[] =
 { // Size					Flags							FOURCC	bits	R/Ymask		G/U/Zmask	B/V/STmask	A/Zmask
@@ -46,7 +55,8 @@ const DDPIXELFORMAT texformats[] =
 { sizeof(DDPIXELFORMAT),	DDPF_ZBUFFER,					0,		32,		8,			0xFFFFFF00,	0xFF,		0 },
 { sizeof(DDPIXELFORMAT),	DDPF_ZBUFFER,					0,		32,		8,			0xFF,		0xFFFFFF00,	0 }
 };
-static constexpr int g_numtexformats = static_cast<int>(std::size(texformats));
+// 改为 `int` (无 static / 无 const / 无 constexpr), 让 MSVC 生成 external symbol
+int g_numtexformats = static_cast<int>(std::size(texformats));
 const DDPIXELFORMAT* g_texformats = texformats;
 
 HRESULT m_IDirect3DTexture::QueryInterface(REFIID riid, LPVOID * ppvObj)

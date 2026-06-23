@@ -44,10 +44,16 @@ jobs:
           submodules: recursive
 
       # -------------------- 2. setup MSVC --------------------
+      # Phase 8.25.15: 切到 x86 (Win32) toolchain.
+      #   原因: 项目自带的 ExtraDxSDK/Lib/d3dx9.lib 是 i386 (32-bit) ar 格式, 与 x64 build
+      #   不兼容 (CI #42 LNK1181 cannot open input file 'd3dx9.lib' + 4 个 D3DX LNK2019).
+      #   MSVC x64 link.exe 拒绝链接 32-bit obj 库.
+      #   Win32 (32-bit) build 匹配 d3dx9.lib 架构, link 成功.
+      #   32-bit ddfix.dll 仍可在 64-bit Windows 上运行 (WOW64).
       - name: Setup MSVC (Developer Command Prompt)
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: x86
 
       # -------------------- 3. setup CMake --------------------
       - name: Setup CMake
@@ -105,11 +111,13 @@ jobs:
           #   ilammy/msvc-dev-cmd@v1 虽激活 MSVC env，但 cmake 用 vswhere 找不到 VS 17 2022 实例
           #   现象：CMake Error: could not find any instance of Visual Studio (generator=Visual Studio 17 2022)
           #   修复：跟随 runner 实际安装，改用 VS 18 2026
+          # Phase 8.25.15: 去掉 `-A x64` 让默认 Win32 平台生效 (vs MSVC toolchain 上面已切到 x86).
+          #   原因: d3dx9.lib 是 32-bit, x64 build LNK1181 找不到. 切 Win32 匹配 lib 架构.
           $cmakeArgs = @(
             '-S', '.'
             '-B', 'build'
             '-G', 'Visual Studio 18 2026'
-            '-A', 'x64'
+            '-A', 'Win32'
             '-DBUILD_TESTS=ON'
             '-DBUILD_DDFIX_LIB=OFF'
             "-DGameExe=$($env:GAME_EXE)"

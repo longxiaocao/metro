@@ -39,6 +39,10 @@ add_custom_command(OUTPUT ColorKeyHLSLC.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ddraw/ColorKey.hlsl
     COMMENT "Compiling ColorKey.hlsl via fxc.exe")
+# Phase 8.25.15: 用 add_custom_target 包装 fxc 命令, 让 ddfix / ddfix-static 通过
+#   add_dependencies 显式声明依赖, 避免 VS multi-config generator 在多 target 并行构建时
+#   ColorKeyHLSLC.h 还没生成就开始编译 cpp。
+add_custom_target(CompileColorKeyHLSLC DEPENDS ColorKeyHLSLC.h)
 
 FILE(GLOB SRC_DINPUT dinput/*.h dinput/*.cpp)
 FILE(GLOB SRC_DDRAW ddraw/*.h ddraw/*.cpp)
@@ -61,19 +65,35 @@ FILE(GLOB SRC_DEBUG Debug/*.h Debug/*.cpp)
 
 FILE(GLOB SOURCE_FILES *.h *.cpp *.def)
 include_directories(${EXTRADXSDK_INCLUDE_DIR})
+# Phase 8.25.15: 把 d3dx9.lib 是否存在作为守护, 不存在时不强行 link, 避免 LNK1181。
+#   背景: 项目自带的 ExtraDxSDK/Lib/d3dx9.lib 是 i386 (32-bit) ar 格式, 与 x64 build
+#   不兼容 (x64 link.exe 拒绝链接 32-bit obj 库). CI 切到 Win32 (32-bit) 后 link 能成功.
+#   额外保险: 即使 lib 不存在或 arch 不匹配, 也不让 link 阶段 LNK1181 直接 fatal.
+if (EXISTS "${EXTRADXSDK_LIB_DIR}/d3dx9.lib")
+    message(STATUS "d3dx9.lib found at ${EXTRADXSDK_LIB_DIR}/d3dx9.lib")
+    set(D3DX9_LIB "d3dx9.lib")
+else()
+    message(WARNING "d3dx9.lib NOT found at ${EXTRADXSDK_LIB_DIR}; D3DX functions will fail to link")
+    set(D3DX9_LIB "")
+endif()
 link_directories(${EXTRADXSDK_LIB_DIR})
 
 # 主目标：ddfix 共享库（始终构建，保持向后兼容）
 add_library(ddfix SHARED ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h)
 # Phase 7: 增加 dxguid.lib（IID 宏定义需要）+ winmm.lib（DInput 8 升级需要）
-target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib "-SAFESEH:NO")
+target_link_libraries(ddfix minhook dinput8.lib Strmiids.lib d3d9.lib ${D3DX9_LIB} dxguid.lib winmm.lib legacy_stdio_definitions.lib "-SAFESEH:NO")
+# Phase 8.25.15: 显式声明 ddfix 依赖 CompileColorKeyHLSLC, 保证 fxc 先跑
+add_dependencies(ddfix CompileColorKeyHLSLC)
 
 # 静态库：总是构建（tests/CMakeLists.txt 链接 ddfix-static 拿 IniParser/PerfCounter 等
 #   纯 STL 实现，避免 ddfixtests 通过 ddraw/com 调用 ddfix.dll 的全部依赖）
 #   Phase 8.15: 之前用 `if (BUILD_DDFIX_LIB)` 包了，BUILD_DDFIX_LIB=OFF 时 tests link 失败
 #   （LNK2019 unresolved external NDDFIX::Config::IniParser::*）。改为无条件构建。
-add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ColorKeyHLSLC.h)
-target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib d3dx9.lib dxguid.lib winmm.lib legacy_stdio_definitions.lib)
+#   Phase 8.25.15: 改用 ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h 全路径, 与 ddfix 一致,
+#     确保 ddfix-static 也触发 fxc 生成 ColorKeyHLSLC.h, 避免 ddfix 阶段找不到。
+add_library(ddfix-static STATIC ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h)
+target_link_libraries(ddfix-static minhook dinput8.lib Strmiids.lib d3d9.lib ${D3DX9_LIB} dxguid.lib winmm.lib legacy_stdio_definitions.lib)
+add_dependencies(ddfix-static CompileColorKeyHLSLC)
 set_target_properties(ddfix-static PROPERTIES OUTPUT_NAME "ddfix-static")
 
 # 向后兼容：BUILD_DDFIX_LIB 选项保留但变为 no-op（永远 ON）

@@ -2,6 +2,21 @@
 #include "Common/Logging.h"
 #include "Config/ConfigManager.h"
 #include "Debug/HudRenderer.h"
+// Phase 8.25.15: 改用直接 include ColorKeyHLSLC.h, 不再用 forward declare.
+//   根因 (CI #42 LNK2019 unresolved external `g_colorKeyHLSLC`):
+//     D3D9Context.cpp line 563 之前用 `extern const DWORD g_colorKeyHLSLC[];` forward declare,
+//     期望 IDirectDrawSurface4.cpp 的 #include "ColorKeyHLSLC.h" 提供定义, link 时能找到。
+//     但 CI 上 ddfix-static target 的 add_custom_command 触发 fxc 生成 ColorKeyHLSLC.h 时机
+//     不确定 (VS multi-config generator + ddfix-static 在 ddfix 之前构建), 导致 ddfix 阶段
+//     ColorKeyHLSLC.h 不存在 / 为空, IDirectDrawSurface4.cpp 中 g_colorKeyHLSLC 没有真实定义,
+//     D3D9Context.obj 链接时报 LNK2019。
+//   修复: 直接在 D3D9Context.cpp #include "ColorKeyHLSLC.h", 让 D3D9Context.obj 自己也持有
+//     g_colorKeyHLSLC 数组定义。多个 TU include 同一 .h 在 C++ 中会引起 multiple definition,
+//     除非 ColorKeyHLSLC.h 用 `inline const DWORD` 或 `static const DWORD` 限定。fxc 生成的
+//     .h 是 `const DWORD g_colorKeyHLSLC[] = {...};` (无 inline/static), 在 C++ 中 const 全局
+//     数组默认有 internal linkage (C++ 规则, 与 C 不同), 所以多 TU include 不会冲突。
+//     验证方法: g++ / cl 编译 const T x[] 数组, 多个 TU include 不会 LNK4006。
+#include "ColorKeyHLSLC.h"
 
 using namespace ND3D9;
 
@@ -558,9 +573,8 @@ Resource9Handle D3D9Context::CreateVertexBuffer9(UINT length, DWORD usage, DWORD
 // 2) D3D9 Reset 会清空所有内部对象，所以 ResetDevice 之后要把 m_colorKeyShaderInited 重置，
 //    下次 GetSharedColorKeyShader() 触发 EnsureSharedColorKeyShader() 重新编译。
 // 注意：编译产物 g_colorKeyHLSLC 来自 ddraw/ColorKey.hlsl，由 CMakeLists.txt 用 fxc.exe 预编译生成 ColorKeyHLSLC.h。
-// 这里 forward declare 头引用，在 IDirectDrawSurface4.cpp 顶部已 #include "ColorKeyHLSLC.h"，
-// 但 D3D9Context.cpp 不应直接依赖 ddraw 子目录头，所以用 extern 引用。
-extern const DWORD g_colorKeyHLSLC[];
+// Phase 8.25.15: 已在文件顶部 (line 19) 直接 #include "ColorKeyHLSLC.h", 这里不再 forward declare,
+//   避免 LNK2019 (g_colorKeyHLSLC 在多个 TU 中真实定义, 避免 forward declare 但定义缺失的隐性 bug)。
 
 void D3D9Context::EnsureSharedColorKeyShader()
 {
