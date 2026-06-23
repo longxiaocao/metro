@@ -51,6 +51,13 @@ if (WIN32)
 		#   之前 link 列表为空，ddfixtests 报 LNK2019 unresolved NDDFIX::Config::IniParser::*
 		#   ddfix-static 由 ddfix/CMakeLists.txt 无条件构建（Phase 8.15 起不依赖 BUILD_DDFIX_LIB）
 		ddfix-static
+		# Phase 8.25.16: 显式传递 d3dx9.lib + link_directories 兜底 (CI #43 报告
+		#   LNK1181 cannot open input file 'd3dx9.lib' [ddfixtests.vcxproj]).
+		#   根因: tests 子目录作为 ddfix 的兄弟, 不继承 ddfix/CMakeLists.txt 中的 link_directories.
+		#     顶层 CMakeLists.txt 提到 link_directories 后, ddfixtests 仍可能在某些 VS generator
+		#     配置下不传递 d3dx9.lib 路径. 显式 link 解决.
+		#   注: D3DX9_LIB 顶层 set 为空时 (d3dx9.lib 不存在), 这里 link 空字符串无副作用.
+		${D3DX9_LIB}
 		# 显式拉 COM 启动/卸载（initguid 用）
 		# 不需要 d3d9.lib，测试不构造 D3D9 设备
 	)

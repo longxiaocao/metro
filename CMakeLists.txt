@@ -29,6 +29,23 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # -------------------- 第三方 SDK 路径 --------------------
 set (EXTRADXSDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ExtraDxSDK/Include)
 set (EXTRADXSDK_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ExtraDxSDK/Lib)
+# Phase 8.25.16: 把 link_directories 移到顶层, 让 ddfix + tests 都能继承 (CI #43 报告
+#   LNK1181 cannot open input file 'd3dx9.lib' [D:\a\metro\metro\build\tests\ddfixtests.vcxproj]).
+#   根因: link_directories() 是 CMake 目录级全局, 只在设置它的 CMakeLists.txt 文件作用域
+#     (含 add_subdirectory 引入的子目录) 内有效。ddfix 子目录设置后, tests 子目录作为 sibling
+#     目录无法继承, 导致 ddfixtests 链接时找不到 d3dx9.lib (虽然 ddfix-static 内部已经 link)。
+#   修复: 提到顶层, ddfix 和 tests 都能继承。
+#   注: ddfix/CMakeLists.txt 仍有 link_directories 兜底, 保证直接构建 ddfix 子目录时也能用。
+link_directories(${EXTRADXSDK_LIB_DIR})
+# Phase 8.25.16: d3dx9.lib 守护, 不存在时 CMake 全局变量 D3DX9_LIB 为空, 避免 ddfix + tests
+#   双 LNK1181.
+if (EXISTS "${EXTRADXSDK_LIB_DIR}/d3dx9.lib")
+    message(STATUS "d3dx9.lib found at ${EXTRADXSDK_LIB_DIR}/d3dx9.lib (Phase 8.25.16 global)")
+    set(D3DX9_LIB "d3dx9.lib")
+else()
+    message(WARNING "d3dx9.lib NOT found at ${EXTRADXSDK_LIB_DIR}; D3DX functions will fail to link")
+    set(D3DX9_LIB "")
+endif()
 
 # Phase 8.9: 加 GameExe 空值检查
 #   原 line 33 直接调用 get_filename_component(GameDir ${GameExe} DIRECTORY)

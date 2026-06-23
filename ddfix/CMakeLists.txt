@@ -65,18 +65,13 @@ FILE(GLOB SRC_DEBUG Debug/*.h Debug/*.cpp)
 
 FILE(GLOB SOURCE_FILES *.h *.cpp *.def)
 include_directories(${EXTRADXSDK_INCLUDE_DIR})
-# Phase 8.25.15: 把 d3dx9.lib 是否存在作为守护, 不存在时不强行 link, 避免 LNK1181。
-#   背景: 项目自带的 ExtraDxSDK/Lib/d3dx9.lib 是 i386 (32-bit) ar 格式, 与 x64 build
-#   不兼容 (x64 link.exe 拒绝链接 32-bit obj 库). CI 切到 Win32 (32-bit) 后 link 能成功.
-#   额外保险: 即使 lib 不存在或 arch 不匹配, 也不让 link 阶段 LNK1181 直接 fatal.
-if (EXISTS "${EXTRADXSDK_LIB_DIR}/d3dx9.lib")
-    message(STATUS "d3dx9.lib found at ${EXTRADXSDK_LIB_DIR}/d3dx9.lib")
-    set(D3DX9_LIB "d3dx9.lib")
-else()
-    message(WARNING "d3dx9.lib NOT found at ${EXTRADXSDK_LIB_DIR}; D3DX functions will fail to link")
-    set(D3DX9_LIB "")
-endif()
-link_directories(${EXTRADXSDK_LIB_DIR})
+# Phase 8.25.16: link_directories 已在顶层 CMakeLists.txt 设置, 这里注释掉避免冗余.
+#   见顶层 CMakeLists.txt Phase 8.25.16 注释. 此处保留 link_directories 兜底, 防止有人
+#   只构建 ddfix 子目录时找不到 lib.
+# link_directories(${EXTRADXSDK_LIB_DIR})
+# Phase 8.25.16: D3DX9_LIB 全局变量由顶层 CMakeLists.txt 设置 (Phase 8.25.16), 不再
+#   重复 set. 这里直接用.
+message(STATUS "ddfix target using D3DX9_LIB: '${D3DX9_LIB}' (set by top-level CMakeLists.txt)")
 
 # 主目标：ddfix 共享库（始终构建，保持向后兼容）
 add_library(ddfix SHARED ${SOURCE_FILES} ${SRC_DINPUT} ${SRC_DDRAW} ${SRC_DSHOW} ${SRC_COMMON} ${SRC_CONFIG} ${SRC_DEBUG} ${CMAKE_CURRENT_BINARY_DIR}/ColorKeyHLSLC.h)
