@@ -1,4 +1,4 @@
-#include "D3D9Context.h"
+﻿#include "D3D9Context.h"
 #include "Common/Logging.h"
 #include "Config/ConfigManager.h"
 #include "Debug/HudRenderer.h"
@@ -17,6 +17,16 @@
 //     数组默认有 internal linkage (C++ 规则, 与 C 不同), 所以多 TU include 不会冲突。
 //     验证方法: g++ / cl 编译 const T x[] 数组, 多个 TU include 不会 LNK4006。
 #include "ColorKeyHLSLC.h"
+// Phase 9.3.9: GBuffer 资源管理转发到 GBufferRenderer 单例。
+//   GBufferRenderer 完整实现 4 RT + depth + 3 shader 管理; D3D9Context 这层
+//   只暴露 8 个薄包装 API, 保持 D3D9Context.h API 表面整齐。
+#include "ddraw/GBufferRenderer.h"
+// Phase 9.4: Shadow Map 资源管理转发到 ShadowRenderer 单例。
+//   ShadowRenderer 完整实现 N 张 shadow texture + shadow shader 管理;
+//   D3D9Context 这层只暴露 8 个薄包装 API, 保持 D3D9Context.h API 表面整齐。
+#define NDDFIX_DEBUG_INCLUDES
+#include "ddraw/ShadowRenderer.h"
+#undef NDDFIX_DEBUG_INCLUDES
 
 using namespace ND3D9;
 
@@ -337,6 +347,38 @@ void D3D9Context::Initialize(::HWND hwnd)
 	// Phase 4.2: HUD 初始化（D3DXFont 创建设备相关资源）。
 	// 必须在 CreateDevice 之后调；设备丢失/重置由 ResetDevice 内部钩。
 	NDDFIX::Debug::HudRenderer::Instance()->Initialize();
+
+	// Phase 9.3.9: GBuffer 初始化（4 RT + depth + 3 shader）。
+	//   失败 (caps 不支持 / 创 RT 失败 / 编译 shader 失败) → 内部 unavailable, 后续
+	//   RenderFrame 退化为 no-op, 原始 Execute 路径继续可用。
+	{
+		int bbW = 0, bbH = 0;
+		GetBackBufferSize(&bbW, &bbH);
+		if (bbW > 0 && bbH > 0)
+		{
+			HRESULT gbufHr = CreateGBuffer(bbW, bbH);
+			if (FAILED(gbufHr))
+			{
+				logf("D3D9Context::Initialize: GBuffer init failed, hr=0x%08X (will skip GBuffer pass)", gbufHr);
+			}
+		}
+	}
+
+	// Phase 9.4: Shadow Map 初始化（N 张 depth shadow texture + shadow shader）。
+	//   失败 (创 texture 失败 / 编译 shader 失败) → 内部 unavailable, 后续
+	//   RenderShadowMaps 退化为 no-op, 原始 Execute 路径继续可用。
+	//   配置从 ConfigManager.GetShadow() 读 (默认 1024x1024, 3 cascade, 5x5 PCF)。
+	{
+		const auto& shadowCfg = NDDFIX::Config::ConfigManager::Instance()->GetShadow();
+		if (shadowCfg.enableShadow)
+		{
+			HRESULT shadowHr = CreateShadowMaps(shadowCfg.shadowMapSize, shadowCfg.cascadeCount);
+			if (FAILED(shadowHr))
+			{
+				logf("D3D9Context::Initialize: Shadow init failed, hr=0x%08X (will skip shadow pass)", shadowHr);
+			}
+		}
+	}
 }
 
 D3D9Context* D3D9Context::Instance()
@@ -350,6 +392,11 @@ D3D9Context::D3D9Context()
 	, m_d3dDev9(nullptr)
 	, m_backBufferWidth(0)
 	, m_backBufferHeight(0)
+	// Phase 9.1: 初始化游戏请求模式为"未设置"
+	, m_requestedWidth(0)
+	, m_requestedHeight(0)
+	, m_requestedBpp(0)
+	, m_hasRequestedMode(false)
 	, m_deviceLost(false)
 	, m_hwnd(0)
 	, m_resCountHistory(0)
@@ -388,6 +435,22 @@ HRESULT D3D9Context::ResetDevice()
 	else if (testResult != D3DERR_DEVICENOTRESET)
 	{
 		return D3DERR_DEVICENOTRESET;
+	}
+
+	// Phase 9.3.9: Reset 前释放 GBuffer（4 RT + depth + 3 shader）。
+	//   D3D9 Reset 会丢弃所有内部 surface/texture/shader 引用, 提前 Shutdown
+	//   让 GBufferRenderer 知道自己已被 invalidate, Reset 后由 CreateGBuffer 重建。
+	//   WHY 这里 (而不是 Reset 后): Shutdown 必须在 m_d3dDev9->Reset() 前调,
+	//   否则 D3D9 内部对象会失效, Release 时崩溃。
+	{
+		auto* gbuf = NDDFIX::Render::GBufferRenderer::Instance();
+		if (gbuf->IsAvailable())
+		{
+			int prevW = gbuf->GetWidth();
+			int prevH = gbuf->GetHeight();
+			gbuf->Shutdown();
+			logf("D3D9Context::ResetDevice: GBuffer released (was %dx%d), will rebuild", prevW, prevH);
+		}
 	}
 
 	auto oldResAllocated = m_resAllocated;
@@ -442,6 +505,21 @@ HRESULT D3D9Context::ResetDevice()
 	// Phase 4.2: HUD 资源重新挂回设备（D3DXFont::OnResetDevice）。
 	NDDFIX::Debug::HudRenderer::Instance()->OnDeviceReset();
 
+	// Phase 9.3.9: Reset 成功后, 尝试按 back buffer 尺寸重建 GBuffer。
+	//   失败 (caps 不支持 / 创 RT 失败) → 内部 unavailable, 原始路径继续可用。
+	{
+		int bbW = 0, bbH = 0;
+		GetBackBufferSize(&bbW, &bbH);
+		if (bbW > 0 && bbH > 0)
+		{
+			HRESULT gbufHr = CreateGBuffer(bbW, bbH);
+			if (FAILED(gbufHr))
+			{
+				logf("D3D9Context::ResetDevice: GBuffer rebuild failed, hr=0x%08X (will skip GBuffer pass)", gbufHr);
+			}
+		}
+	}
+
 	return D3D_OK;
 	}
 	else
@@ -452,12 +530,52 @@ HRESULT D3D9Context::ResetDevice()
 
 void D3D9Context::CalcBackBufferSize()
 {
+	// Phase 9.1: 优先使用游戏请求的显示模式（来自 IDirectDraw::SetDisplayMode 拦截）
+	// 解决 HP 槽 / UI 偏移问题：之前用显示器物理分辨率（如 1920x1080）作为 back buffer 尺寸，
+	// 导致游戏在 800x600 内部坐标系画的 HP 槽位置（350, 560）出现在 back buffer 的左上角
+	// 而不是游戏期望的"屏幕底部居中"。
+	//
+	// 修法：拦截 SetDisplayMode 后，存储游戏请求的 width/height；
+	//      CalcBackBufferSize 优先用请求尺寸；fallback 到显示器分辨率（保持原行为）。
+	//
+	// 引用：docs/literature/PUBLIC_LITERATURE.md
+	//       Direct3D 9 官方文档 D3DPRESENT_PARAMETERS
+	if (m_hasRequestedMode && m_requestedWidth > 0 && m_requestedHeight > 0)
+	{
+		m_backBufferWidth = m_requestedWidth;
+		m_backBufferHeight = m_requestedHeight;
+		logf("D3D9Context::CalcBackBufferSize: using requested mode %dx%d (game)",
+			m_backBufferWidth, m_backBufferHeight);
+		return;
+	}
+
+	// Fallback: 显示器物理分辨率（原行为）
 	DEVMODE currmode;
 	ZeroMemory(&currmode, sizeof(DEVMODE));
 	currmode.dmSize = sizeof(DEVMODE);
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &currmode);
 	m_backBufferWidth = currmode.dmPelsWidth;
 	m_backBufferHeight = currmode.dmPelsHeight;
+	logf("D3D9Context::CalcBackBufferSize: using display mode %dx%d (no game request)",
+		m_backBufferWidth, m_backBufferHeight);
+}
+
+// Phase 9.1: 拦截 IDirectDraw::SetDisplayMode 时调此方法存储请求模式
+void D3D9Context::SetRequestedMode(DWORD width, DWORD height, DWORD bpp)
+{
+	m_requestedWidth = (int)width;
+	m_requestedHeight = (int)height;
+	m_requestedBpp = (int)bpp;
+	m_hasRequestedMode = true;
+	logf("D3D9Context::SetRequestedMode: %dx%d %dbpp (will use as BackBuffer size)",
+		m_requestedWidth, m_requestedHeight, m_requestedBpp);
+}
+
+void D3D9Context::GetRequestedMode(int* width, int* height, int* bpp) const
+{
+	if (width) *width = m_requestedWidth;
+	if (height) *height = m_requestedHeight;
+	if (bpp) *bpp = m_requestedBpp;
 }
 
 HRESULT D3D9Context::CreateDevice()
@@ -610,5 +728,114 @@ ID3DXConstantTable* D3D9Context::GetSharedColorKeyConstantTable()
 {
 	EnsureSharedColorKeyShader();
 	return m_colorKeyConstantTable;
+}
+
+// Phase 9.3.9: GBuffer API 薄包装（实际实现在 GBufferRenderer 单例）
+//   设计动机：D3D9Context.h 暴露 8 个 GBuffer 公开方法, 但实际逻辑
+//     (RT 创建/shader 编译/caps check) 在 GBufferRenderer. 这里只 forward,
+//     让 ddfix IDirect3DDevice::Execute 调 D3D9Context::* 而不是直连 renderer.
+//   单元测试通过 D3D9Context 验证 GBuffer 资源管理 (IsGBufferAvailable 等)。
+HRESULT D3D9Context::CreateGBuffer(int width, int height)
+{
+	if (!m_d3dDev9) return E_POINTER;
+	return NDDFIX::Render::GBufferRenderer::Instance()->Initialize(m_d3dDev9, width, height);
+}
+
+HRESULT D3D9Context::BindGBufferAsRenderTarget()
+{
+	if (!m_d3dDev9) return E_POINTER;
+	return NDDFIX::Render::GBufferRenderer::Instance()->BindGBufferAsRenderTarget(m_d3dDev9);
+}
+
+HRESULT D3D9Context::UnbindGBuffer()
+{
+	if (!m_d3dDev9) return E_POINTER;
+	return NDDFIX::Render::GBufferRenderer::Instance()->UnbindGBuffer(m_d3dDev9);
+}
+
+IDirect3DTexture9* D3D9Context::GetGBufferPosTex() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetPosTex();
+}
+
+IDirect3DTexture9* D3D9Context::GetGBufferNormalTex() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetNormalTex();
+}
+
+IDirect3DTexture9* D3D9Context::GetGBufferDiffuseTex() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetDiffuseTex();
+}
+
+IDirect3DTexture9* D3D9Context::GetGBufferSpecularTex() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetSpecTex();
+}
+
+void D3D9Context::ReleaseGBuffer()
+{
+	NDDFIX::Render::GBufferRenderer::Instance()->Shutdown();
+}
+
+int D3D9Context::GetGBufferWidth() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetWidth();
+}
+
+int D3D9Context::GetGBufferHeight() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->GetHeight();
+}
+
+bool D3D9Context::IsGBufferAvailable() const
+{
+	return NDDFIX::Render::GBufferRenderer::Instance()->IsAvailable();
+}
+
+// Phase 9.4: Shadow API 薄包装 (实际实现在 ShadowRenderer 单例)
+//   设计动机: D3D9Context.h 暴露 8 个 Shadow 公开方法, 但实际逻辑
+//     (texture 创建 / shader 编译 / cascade 计算) 在 ShadowRenderer. 这里只 forward,
+//     让 ddfix IDirect3DDevice::Execute 调 D3D9Context::* 而不是直连 renderer.
+//   单元测试通过 D3D9Context 验证 Shadow 资源管理 (IsShadowAvailable 等)。
+HRESULT D3D9Context::CreateShadowMaps(int mapSize, int cascadeCount)
+{
+	if (!m_d3dDev9) return E_POINTER;
+	return NDDFIX::Render::ShadowRenderer::Instance()->Initialize(m_d3dDev9, mapSize, cascadeCount);
+}
+
+void D3D9Context::ReleaseShadowMaps()
+{
+	NDDFIX::Render::ShadowRenderer::Instance()->Shutdown();
+}
+
+IDirect3DTexture9* D3D9Context::GetShadowMapTexture(int cascadeIndex) const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->GetShadowMapTexture(cascadeIndex);
+}
+
+D3DXMATRIX D3D9Context::GetShadowMatrix(int cascadeIndex) const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->GetShadowMatrix(cascadeIndex);
+}
+
+int D3D9Context::GetCascadeCount() const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->GetCascadeCount();
+}
+
+int D3D9Context::GetShadowMapSize() const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->GetMapSize();
+}
+
+int D3D9Context::GetPCFKernelSize() const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->GetPCFKernelSize();
+}
+
+bool D3D9Context::IsShadowAvailable() const
+{
+	return NDDFIX::Render::ShadowRenderer::Instance()->IsAvailable();
 }
 

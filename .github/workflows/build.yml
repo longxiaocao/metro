@@ -59,6 +59,19 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
 
+      # -------------------- 3.5 BOM policy gate (Phase 9.4 / 9.7 build hygiene) --------------------
+      # HLSL files must NOT have BOM (fxc.exe X3000 violation).
+      # C++ files with CJK comments should have BOM (MSVC 936 parse fix).
+      # Failing this gate stops the build before wasting 5+ minutes on fxc.exe errors.
+      - name: BOM policy check
+        shell: pwsh
+        run: |
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File tools\ci_check_bom.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::BOM policy check failed (see output above)"
+            exit $LASTEXITCODE
+          }
+
       # -------------------- 4. configure --------------------
       # 注：BUILD_TESTS=ON 是 Phase 5.3 引入，Phase 6.1 开启
       #      fxc.exe 由 Visual Studio + Windows SDK 自带

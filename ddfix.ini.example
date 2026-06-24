@@ -66,6 +66,53 @@ HudEnabled   = false
 HotkeyToggle = F12
 
 
+[SMAA]
+; SMAA 抗锯齿后处理（Phase 9.2）
+; Mode: 0=Off, 1=Low, 2=Medium, 3=High, 4=Ultra
+;   0 = 默认；Blt 路径零开销（PostProcess::Run 内部直接返 S_OK）
+;   1-4 = 启用抗锯齿；性能与质量权衡（Medium=80% quality 推荐起步）
+; 备注：当前 PostProcess 集成仅完成调度骨架（编译 PS + 创 RT + 创
+;   预计算纹理），三趟 Pass 的 surface-to-texture 桥接留待 Phase 9.3
+;   完成；Mode != 0 但 Initialize 失败时会自动降级为 Off 行为，不影响游戏。
+Mode = 0
+
+
+[Shadow]
+; Cascaded Shadow Map + PCF 软阴影（Phase 9.4）
+; 算法: GPU Gems 3 第 8 章 "Parallel-Split Shadow Maps" (Fan Zhang, 2006)
+;       https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-parallel-split-shadow-maps-programmable-gpus
+;       PCF: GPU Gems 2 第 8.4 节 "Percentage-Closer Soft Shadows"
+;       https://developer.nvidia.com/gpugems/gpugems2/part-02-shading-lighting-and-shadows/chapter-8-terrain-rendering-shadows
+;
+; EnableShadow: true=启用 cascaded shadow pass, false=回退无阴影（Phase 9.3 行为）
+;   true  = 默认；占用 4 张 shadow texture + 1 个 shadow VS/PS, 性能中等开销
+;   false = 关闭整个 shadow pass, PCF 计算 bypass, 性能零开销
+EnableShadow = true
+
+; CascadeCount: cascade 数量 (3 或 4, 越界降级为 3)
+;   3 = 默认；性能与质量平衡
+;   4 = 更多级分割, 远裁面阴影更精确, 性能开销略高
+CascadeCount = 3
+
+; PCFKernelSize: PCF kernel 大小 (3 / 5 / 7, 越界降级为 5)
+;   3 = 锐利边缘, 性能最好
+;   5 = 默认；视觉与性能平衡, 主流游戏标配
+;   7 = 柔和边缘, 性能开销略高
+PCFKernelSize = 5
+
+; ShadowMapSize: 单张 shadow map 分辨率 (512 / 1024 / 2048, 越界降级为 1024)
+;   512  = 性能优先, 远距离阴影精度略低
+;   1024 = 默认；视觉与性能平衡
+;   2048 = 质量优先, 占用 ~16MB 显存, 性能开销略高
+ShadowMapSize = 1024
+
+; SplitLambda: PSSM 视锥分割 lambda 参数 (0.0..1.0, 越界 clamp 到 [0, 1])
+;   0.0 = linear 均匀分割
+;   0.5 = 默认；经验最优混合 (Zhang 2006 推荐)
+;   1.0 = logarithmic 按远裁面比例分割
+SplitLambda = 0.5
+
+
 ; ---------------------------------------------------------------------------
 ; Game Profile 区段
 ; ---------------------------------------------------------------------------

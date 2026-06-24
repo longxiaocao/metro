@@ -1,0 +1,20 @@
+[BOM ADDED] ddfix\ddraw\ScriptApi.cpp
+[BOM ADDED] ddfix\ddraw\PostProcess.h
+[BOM ADDED] ddfix\Config\ConfigManager.h
+[BOM ADDED] ddfix\Config\ConfigManager.cpp
+[BOM ADDED] ddfix\Config\IniParser.h
+[BOM ADDED] ddfix\Debug\HudRenderer.h
+[BOM ADDED] ddfix\Debug\PerfCounter.h
+[BOM ADDED] ddfix\Debug\PerfCounter.cpp
+[BOM ADDED] ddfix\Common\Logging.h
+[MISSING] ddfix\Common\Logging.cpp
+[BOM ADDED] tests\SingleTest.h
+[BOM ADDED] tests\main.cpp
+[BOM ADDED] ddfix\shaders\GBuffer.hlsl
+[BOM ADDED] ddfix\shaders\Deferred.hlsl
+[BOM ADDED] ddfix\shaders\Shadow.hlsl
+
+===== Summary =====
+Added:   14
+Skipped: 17 (already have BOM)
+Missing: 1

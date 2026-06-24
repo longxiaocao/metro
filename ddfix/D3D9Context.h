@@ -75,6 +75,14 @@ namespace ND3D9
 
 	class D3D9Context final
 	{
+		// Phase 9.1.4: 测试友元类，授予访问私有成员的权限。
+		// WHY: 单元测试需验证 CalcBackBufferSize 内部状态（m_requestedWidth/Height），
+		//   但不想把内部状态全暴露为 public API。friend 是 C++ 标准做法，
+		//   侵入性最小且不破坏封装（仅测试类可见）。
+		// 友元类本身定义在 tests/test_d3d9_context.cpp，
+		//   头文件不需要 include 测试文件，只声明 forward 即可。
+		friend struct TestD3D9ContextAccess;
+
 		struct Resource9Info
 		{
 			Resource9Handle handle;
@@ -93,6 +101,9 @@ namespace ND3D9
 		IDirect3DDevice9* GetDevice() const;
 		IDirect3D9* GetD3D9() const;
 		void GetBackBufferSize(int* width, int* height);
+		// Phase 9.1.3: 取 D3D 设备窗口句柄。Pillarbox 计算需要 GetClientRect 拿到窗口尺寸。
+		// 公开 const 访问器，不暴露 m_hwnd 自身以保持封装（仅可读不可改）。
+		::HWND GetHwnd() const { return m_hwnd; }
 		void TagDeviceLost();
 		bool IsDeviceLost() const;
 
@@ -103,6 +114,23 @@ namespace ND3D9
 		Resource9Handle CreateRenderTarget(int width, int height, D3DFORMAT format, D3DMULTISAMPLE_TYPE multiSample, DWORD multisampleQuality, BOOL lockable);
 		Resource9Handle CreateSprite();
 		Resource9Handle CreateVertexBuffer9(UINT length, DWORD usage, DWORD fvf, D3DPOOL pool);
+
+		// Phase 9.1: 游戏请求的显示模式（来自 IDirectDraw::SetDisplayMode 拦截）
+		// BackBuffer 尺寸优先用请求模式而非显示器物理分辨率（解决 HP 槽/UI 偏移问题）
+		// 详见 docs/literature/PUBLIC_LITERATURE.md / gap-analysis-6.5.9.md
+		void SetRequestedMode(DWORD width, DWORD height, DWORD bpp);
+		bool HasRequestedMode() const { return m_hasRequestedMode; }
+		void GetRequestedMode(int* width, int* height, int* bpp) const;
+
+		// Phase 9.1.4: 单元测试用 seam —— 触发 CalcBackBufferSize 重算 back buffer 尺寸。
+		// 友元 + 公开测试方法的设计原因（ddfixtests 编译期无法直接调私有 CalcBackBufferSize）：
+		//   1) CalcBackBufferSize 内部调用 EnumDisplaySettings（OS 依赖），
+		//      fallback 路径不在测试范围内；测试只验证"有请求模式时返请求尺寸"。
+		//   2) 加 friend 而非把 CalcBackBufferSize 改 public：保持 API 表面最小，
+		//      避免业务代码绕过 ddfix 内部状态机。
+		//   3) 该方法名带 ForTest 后缀，调用方一眼能看出是测试入口。
+		//   配套友元类：TestD3D9ContextAccess（位于 tests/）。
+		void CalcBackBufferSizeForTest() { CalcBackBufferSize(); }
 
 		template<class T>
 		SmartPtr<T> GetResource9(Resource9Handle handle, std::string* pType)
@@ -123,7 +151,36 @@ namespace ND3D9
 		IDirect3DPixelShader9* GetSharedColorKeyShader();
 		ID3DXConstantTable* GetSharedColorKeyConstantTable();
 
-	private:
+		// Phase 9.3.9: GBuffer MRT 支持（4 个 RT + 关联 depth stencil）
+		//   - 实际实现在 NDDFIX::Render::GBufferRenderer 单例, 这里只是薄包装
+		//   - 失败容错: 任意步骤失败 (caps check / 创 RT / 编译 shader) → 内部 unavailable
+		//   - 详细设计: ddfix/ddraw/GBufferRenderer.h
+		HRESULT CreateGBuffer(int width, int height);
+	HRESULT BindGBufferAsRenderTarget();
+	HRESULT UnbindGBuffer();
+	IDirect3DTexture9* GetGBufferPosTex() const;
+	IDirect3DTexture9* GetGBufferNormalTex() const;
+	IDirect3DTexture9* GetGBufferDiffuseTex() const;
+	IDirect3DTexture9* GetGBufferSpecularTex() const;
+	void ReleaseGBuffer();
+	int  GetGBufferWidth() const;
+	int  GetGBufferHeight() const;
+	bool IsGBufferAvailable() const;
+
+	// Phase 9.4: Cascaded Shadow Map 资源管理（薄包装到 ShadowRenderer 单例）
+	//   - 实际实现在 NDDFIX::Render::ShadowRenderer 单例
+	//   - 失败容错: 任意步骤失败 (创 texture / 编译 shader) → 内部 unavailable
+	//   - 详细设计: ddfix/ddraw/ShadowRenderer.h
+	HRESULT CreateShadowMaps(int mapSize, int cascadeCount);
+	void    ReleaseShadowMaps();
+	IDirect3DTexture9* GetShadowMapTexture(int cascadeIndex) const;
+	D3DXMATRIX GetShadowMatrix(int cascadeIndex) const;
+	int     GetCascadeCount() const;
+	int     GetShadowMapSize() const;
+	int     GetPCFKernelSize() const;
+	bool    IsShadowAvailable() const;
+
+private:
 		// 内部：懒加载创一次 ColorKey 着色器配套资源。
 		void EnsureSharedColorKeyShader();
 
@@ -161,6 +218,13 @@ namespace ND3D9
 		int m_backBufferWidth;
 		int m_backBufferHeight;
 		Resource9Handle m_backBuffer9Handle;
+
+		// Phase 9.1: 游戏请求的显示模式
+		// 0 = 未设置（fallback 到显示器物理分辨率，保持原行为）
+		int m_requestedWidth;
+		int m_requestedHeight;
+		int m_requestedBpp;
+		bool m_hasRequestedMode;
 
 		bool m_deviceLost;
 

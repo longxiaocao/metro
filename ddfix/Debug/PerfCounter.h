@@ -1,4 +1,4 @@
-// Phase 4.3: 性能计数器
+﻿// Phase 4.3: 性能计数器
 // 设计目标：
 //   - 全局静态计数：每次 Blt / BltFast / FillColor 进入都 Increment*
 //   - 1 秒滑动平均 FPS（基于 PerfCounter::Tick 进入）

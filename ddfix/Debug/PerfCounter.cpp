@@ -1,4 +1,4 @@
-// Phase 4.3: PerfCounter 实现
+﻿// Phase 4.3: PerfCounter 实现
 
 #include "PerfCounter.h"
 #include "../Common/Logging.h"

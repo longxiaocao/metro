@@ -1,4 +1,4 @@
-/**
+﻿/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -409,7 +409,27 @@ HRESULT m_IDirectDraw::SetCooperativeLevel(HWND a, DWORD b)
 
 HRESULT m_IDirectDraw::SetDisplayMode(DWORD a, DWORD b, DWORD c)
 {
-	return ProxyInterface->SetDisplayMode(a, b, c);
+	// Phase 9.1: 拦截游戏的 SetDisplayMode 调用，存储请求的显示模式到 D3D9Context。
+	// 原因：之前 SetDisplayMode 直接转发到 ProxyInterface，但 Win10/Win11 上
+	//       原生 DDraw 已经不能切分辨率，导致 ddfix 自己的 BackBuffer 拿不到游戏期望尺寸，
+	//       回退到用显示器物理分辨率（如 1920x1080），从而 HP 槽/UI 位置偏移。
+	//
+	// 修法：存储 (a, b, c) = (width, height, bpp) 到 D3D9Context::SetRequestedMode。
+	//      D3D9Context::CalcBackBufferSize 优先用这个值（替代 EnumDisplaySettings）。
+	//      详见 docs/literature/PUBLIC_LITERATURE.md / docs/gap-analysis-6.5.9.md
+	ND3D9::D3D9Context::Instance()->SetRequestedMode(a, b, c);
+
+	// 仍然转发给 ProxyInterface（保持接口契约），但 D3D9 设备本身的 back buffer
+	// 由 D3D9Context 控制（用我们的请求尺寸）。
+	// Phase 9.1.5 单元测试用：ProxyInterface 为 null 时跳过转发，允许在测试里
+	// 用 nullptr 构造 m_IDirectDraw 然后只验证 D3D9Context 副作用。
+	// 生产环境 ProxyInterface 永远非空（由 ddfix DLL 注入流程保证），
+	// 此分支只在单元测试路径被触发。
+	if (ProxyInterface)
+	{
+		return ProxyInterface->SetDisplayMode(a, b, c);
+	}
+	return DD_OK;
 }
 
 HRESULT m_IDirectDraw::WaitForVerticalBlank(DWORD a, HANDLE b)

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // Phase 5.1: 日志层重写
 //   - 加 std::mutex 保护（线程安全）

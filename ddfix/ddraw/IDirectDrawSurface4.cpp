@@ -1,4 +1,4 @@
-﻿/**
+/**
 * Copyright (C) 2017 Elisha Riedlinger
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
@@ -19,6 +19,10 @@
 #include "../Config/ConfigManager.h"
 #include "../Debug/HudRenderer.h"
 #include "../Debug/PerfCounter.h"
+// Phase 9.1.3: Pillarbox 居中计算。Pillarbox.cpp 在 ddfix/Common/（已纳入 ddfix-static 链接）。
+#include "../Common/Pillarbox.h"
+// Phase 9.2: SMAA 抗锯齿后处理调度器（占位集成；Mode=Off 时零开销）。
+#include "PostProcess.h"
 #include "ColorKeyHLSLC.h"
 #include <functional>
 
@@ -1240,6 +1244,54 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 		}
 	}
 
+	// Phase 9.1.3: Pillarbox 居中计算
+	//
+	// 思路：
+	//   - destRectOverride（已经过上面的 offset 修正）= 整个 back buffer，
+	//     供 m_surface9Wrapper->Blt 内部 sprite Draw 用作 dest rect；
+	//   - 单独的 presentDestRect 供 Present 的 pDestRect 用，按 Pillarbox 居中
+	//     后写入屏幕坐标；
+	//   - 两者宽高比不一致时（典型 4:3 游戏 + 16:9 显示器）才启用 Pillarbox。
+	//
+	// 设计权衡：
+	//   - 不改 destRectOverride：Blt 路径仍以 back buffer 满矩形为目标，避免影响
+	//     sprite scaling（已基于 back buffer 尺寸调好 D3DXMatrixTransformation2D）。
+	//   - 只改 Present 的 pDestRect：让 D3D9 在最终 present 阶段按窗口居中拉伸，
+	//     这是 D3D9 文档支持的"局部 dest"用法（IDirect3DDevice9::Present 文档）。
+	RECT presentDestRect = destRectOverride;
+	if (m_surfaceType == ESurfaceType::Primary)
+	{
+		int bbWidth = 0;
+		int bbHeight = 0;
+		ND3D9::D3D9Context::Instance()->GetBackBufferSize(&bbWidth, &bbHeight);
+		// 显示器/窗口尺寸：从 D3D 设备窗口 client rect 拿。
+		// WHY: 渲染目标是 back buffer（d3dpp.BackBufferWidth/Height），
+		//   真正显示在屏幕上时按窗口 client 区域大小。Windowed=TRUE 时两者可能不同。
+		::HWND deviceHwnd = ND3D9::D3D9Context::Instance()->GetHwnd();
+		RECT clientRect = { 0, 0, 0, 0 };
+		if (deviceHwnd && ::GetClientRect(deviceHwnd, &clientRect))
+		{
+			int dispWidth = clientRect.right - clientRect.left;
+			int dispHeight = clientRect.bottom - clientRect.top;
+			// 宽高比不一致才启用 Pillarbox；相等时直接满屏，零开销。
+			// 浮点比较用整数叉积避免精度问题：bbW*dispH != bbH*dispW
+			if (bbWidth > 0 && bbHeight > 0 && dispWidth > 0 && dispHeight > 0
+				&& (static_cast<long long>(bbWidth) * dispHeight !=
+					static_cast<long long>(bbHeight) * dispWidth))
+			{
+				NDDFIX::Render::PillarboxRect pb =
+					NDDFIX::Render::CalculatePillarbox(bbWidth, bbHeight, dispWidth, dispHeight);
+				if (pb.dstWidth > 0 && pb.dstHeight > 0)
+				{
+					presentDestRect.left = pb.dstX;
+					presentDestRect.top = pb.dstY;
+					presentDestRect.right = pb.dstX + pb.dstWidth;
+					presentDestRect.bottom = pb.dstY + pb.dstHeight;
+				}
+			}
+		}
+	}
+
 	srcSurface9 = srcSurface->GetSurface9();
 
 	destSurface = this;
@@ -1295,9 +1347,32 @@ HRESULT m_IDirectDrawSurface4::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE4 lpDDS
 
 	m_surface9Wrapper->Blt(srcSurface->m_surface9Wrapper, &srcRectOverride, &destRectOverride, srcColorKey, destColorKey);
 
+	// Phase 9.2: SMAA 抗锯齿后处理（仅 Primary 路径有意义；Off 模式零开销）
+	// WHY: 在 Present 之前对 back buffer 做 in-place SMAA，让最终上屏画面
+	//   经过抗锯齿。Mode 由 [SMAA] section 解析；Off 时 Run 内部直接返 S_OK。
+	// 集成位置：m_surface9Wrapper->Blt 完成（画面已写入 back buffer）之后、
+	//   Present 之前。失败也不阻断 Blt（Run 内部已 try-fail-safe）。
 	if (m_surfaceType == ESurfaceType::Primary)
 	{
-		if (D3DERR_DEVICELOST == device9->Present(&destRectOverride, &destRectOverride, 0, nullptr))
+		auto* pp = NDDFIX::PostProcess::PostProcess::Instance();
+		int cfgMode = NDDFIX::Config::ConfigManager::Instance()->GetPostProcess().smaaMode;
+		pp->SetMode(NDDFIX::PostProcess::ModeFromInt(cfgMode));
+		// 懒初始化：失败不阻断主路径，pp 内部 IsAvailable()==false → 走 off
+		if (!pp->IsAvailable() && pp->GetMode() != NDDFIX::PostProcess::Mode::Off)
+		{
+			(void)pp->Initialize(device9);
+		}
+		// 拿 back buffer surface（in-place 处理：input == output）
+		SmartPtr<IDirect3DSurface9> bb = GetSurface9();
+		(void)pp->Run(device9, bb, bb, pp->GetMode());
+	}
+
+	if (m_surfaceType == ESurfaceType::Primary)
+	{
+		// Phase 9.1.3: Present 的 pDestRect 用 presentDestRect（Pillarbox 居中后区域），
+		// pSourceRect 仍用 destRectOverride（整个 back buffer 区域，不偏移）。
+		// 宽高比一致时 presentDestRect == destRectOverride，行为与原代码完全一致。
+		if (D3DERR_DEVICELOST == device9->Present(&destRectOverride, &presentDestRect, 0, nullptr))
 		{
 			ND3D9::D3D9Context::Instance()->TagDeviceLost();
 			return DDERR_SURFACELOST;

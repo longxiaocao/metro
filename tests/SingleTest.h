@@ -1,4 +1,4 @@
-// Phase 6.1: 极简自包含测试框架（SingleTest）
+﻿// Phase 6.1: 极简自包含测试框架（SingleTest）
 // 设计目标：
 //   - 零依赖（仅 STL），不引入 gtest 等第三方库
 //   - 项目为离线分发，不联网 FetchContent
@@ -87,6 +87,29 @@ inline void CountAssert()
 			std::ostringstream _oss;                                      \
 			_oss << "EXPECT_EQ(" #a ", " #b ") actual=" << _va              \
 			     << " expected=" << _vb;                                   \
+			singletest::ReportAssertFail(_oss.str().c_str(),               \
+				__FILE__, __LINE__);                                       \
+		}                                                                  \
+	} while (0)
+
+// 浮点近似比较 (gtest 兼容: EXPECT_NEAR(a, b, tolerance))
+//   - a / b 算一次,只 1 个 assertion
+//   - tolerance 必须 >= 0; 负值视作 0
+//   - 失败信息含 actual/expected/tolerance
+#define EXPECT_NEAR(a, b, tol)                                             \
+	do {                                                                   \
+		singletest::CountAssert();                                         \
+		auto _va = (a);                                                    \
+		auto _vb = (b);                                                    \
+		double _tol = (double)(tol);                                       \
+		if (_tol < 0.0) _tol = 0.0;                                        \
+		double _diff = (double)_va - (double)_vb;                          \
+		if (_diff < 0.0) _diff = -_diff;                                   \
+		if (_diff > _tol) {                                                \
+			std::ostringstream _oss;                                      \
+			_oss << "EXPECT_NEAR(" #a ", " #b ", " #tol ") actual=" << _va  \
+			     << " expected=" << _vb << " diff=" << _diff               \
+			     << " tolerance=" << _tol;                                 \
 			singletest::ReportAssertFail(_oss.str().c_str(),               \
 				__FILE__, __LINE__);                                       \
 		}                                                                  \

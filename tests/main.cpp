@@ -1,4 +1,4 @@
-// Phase 6.6: 单元测试主入口
+﻿// Phase 6.6: 单元测试主入口
 //
 // 跑所有 .cpp 中的 TEST(group, name) 宏
 // 入口由 SingleTest.h 提供：RUN_ALL_TESTS()
@@ -17,6 +17,19 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+
+// Phase 9.1.4: Log::LOG stub for ddfixtests
+//
+// WHY: ddfix-static now contains D3D9Context.cpp + HudRenderer.cpp, which both
+//   reference Log::LOG (declared in ddfix/Common/Logging.h).
+//   真实定义在 ddfix/dllmain.cpp:19, 但 dllmain.cpp 不在 ddfix-static 内
+//   (Phase 8.25.22 决定 ddfix-static 只编 Config/Debug/Common, 避免 ddraw proxy
+//   全局状态污染测试 .exe).
+//   测试不需要真日志文件 (CI 环境无控制台, 写 ddfix.log 也无意义), 这里给一个
+//   关闭状态的 ofstream 占位即可. 满足链接器对 static 成员的 ODR 要求.
+#include "../ddfix/Common/Logging.h"
+#include <fstream>
+std::ofstream Log::LOG;
 
 int main(int argc, char** argv)
 {

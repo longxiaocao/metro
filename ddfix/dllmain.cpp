@@ -15,6 +15,7 @@
 
 #include "Config/ConfigManager.h"
 #include "Debug/HudRenderer.h"
+#include "ddraw/ScriptApi.h"
 
 std::ofstream Log::LOG("ddfix.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>(nullptr);
@@ -461,10 +462,16 @@ BOOL WINAPI DllMain(
 		DSHOW_HOOK::Hook(); // 避免DShow里使用DX6的接口
 		// Phase 4.4: 安装 F12 切换钩子。内部按 ConfigManager.HudEnabled 判定是否真挂。
 		DEBUG_HOOK::Install();
+		// Phase 9.7: 注册 16 个 Ddfix_* 脚本 API 到导出表。AHK 脚本通过
+		//   DllCall("ddfix.dll\Ddfix_Func", ...) 调我们。RegisterAll 幂等,
+		//   重复调 (例如 host 进程 FreeLibrary + LoadLibrary) 仅记日志不报错.
+		NDDFIX::Script::ScriptApi::Instance()->RegisterAll();
 		break;
 	case DLL_PROCESS_DETACH:
 		// Phase 4.4: 卸载键盘钩，避免 host 进程闪退。
 		DEBUG_HOOK::Uninstall();
+		// Phase 9.7: 反注册脚本 API。析构时也会自动调, 这里冗余保险.
+		NDDFIX::Script::ScriptApi::Instance()->UnregisterAll();
 		break;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

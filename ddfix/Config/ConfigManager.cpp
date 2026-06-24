@@ -1,4 +1,4 @@
-// Phase 3.2 + 3.5: ConfigManager 实现
+﻿// Phase 3.2 + 3.5: ConfigManager 实现
 
 #include "ConfigManager.h"
 
@@ -44,6 +44,22 @@ void ConfigManager::LoadDefaults()
 
 	m_debug.hudEnabled  = false;
 	m_debug.hotkeyToggle = "F12";
+
+	// Phase 9.2: SMAA 默认 Off（零开销，向后兼容旧版）
+	m_postProcess.smaaMode = 0;
+
+	// Phase 9.3.12: Renderer 默认 true（让 ExecuteBuffer hook 始终跑解析 + 暂存）
+	//   Phase 9.3 阶段 hook 只做几何提取（暂存 m_extractedGeometry），不影响原始 Execute 行为。
+	//   真正决定"是否用解析结果渲染"的是 GBuffer 集成（Phase 9.3.11），届时增加独立开关。
+	m_renderer.enableRenderer = true;
+
+	// Phase 9.4: Shadow 默认 true (1024x1024, 3 cascade, 5x5 PCF, lambda=0.5)
+	//   与 Phase 9.4 文档承诺的"3-4 级 cascade + 5x5 PCF"默认值一致
+	m_shadow.enableShadow  = true;
+	m_shadow.cascadeCount  = 3;
+	m_shadow.pcfKernelSize = 5;
+	m_shadow.shadowMapSize = 1024;
+	m_shadow.splitLambda   = 0.5f;
 
 	m_currentGameProfile.clear();
 }
@@ -93,6 +109,55 @@ void ConfigManager::ApplySection(const char* section)
 	{
 		std::string hk = m_parser.GetString(section, "HotkeyToggle", m_debug.hotkeyToggle.c_str());
 		if (!hk.empty()) m_debug.hotkeyToggle = hk;
+	}
+
+	// Phase 9.2: PostProcess / SMAA
+	// 解析 [SMAA] 段的 Mode key（0..4）。越界由 PostProcess::ModeFromInt 兜底返 Off。
+	{
+		int mode = m_parser.GetInt(section, "Mode", m_postProcess.smaaMode);
+		if (mode < 0 || mode > 4) mode = 0;
+		m_postProcess.smaaMode = mode;
+	}
+
+	// Phase 9.3.12: Renderer / ExecuteBuffer hook
+	// 解析 [Renderer] 段的 EnableRenderer key（true/false）。
+	//   true  = 走 Phase 9.3 自写 GBuffer/Deferred 路径（暂为 hook-only stub）
+	//   false = 回退 Phase 1-8 行为（透传 ProxyInterface->Execute）
+	//   hook 解析逻辑始终跑，开关只控制后续 Phase 9.3.11 GBuffer 集成是否启用。
+	m_renderer.enableRenderer = m_parser.GetBool(section, "EnableRenderer", m_renderer.enableRenderer);
+
+	// Phase 9.4: Shadow / Cascaded Shadow Map + PCF
+	// 解析 [Shadow] 段的 5 个 key:
+	//   EnableShadow  : true/false (默认 true)
+	//   CascadeCount  : 3 或 4 (越界 → 3, 与 ShadowRenderer::ClampCascadeCount 一致)
+	//   PCFKernelSize : 3 / 5 / 7 (越界 → 5, 与 ShadowRenderer::ClampPCFKernelSize 一致)
+	//   ShadowMapSize : 512 / 1024 / 2048 (越界 → 1024)
+	//   SplitLambda   : 0.0..1.0 (越界 clamp 到 [0, 1])
+	//   边界保护: 这里用最严格的 clamp 兜底, ShadowRenderer 内 ClampCascadeCount 二次保护
+	m_shadow.enableShadow = m_parser.GetBool(section, "EnableShadow", m_shadow.enableShadow);
+	{
+		int count = m_parser.GetInt(section, "CascadeCount", m_shadow.cascadeCount);
+		if (count < 1) count = 1;
+		if (count > 4) count = 4;
+		m_shadow.cascadeCount = count;
+	}
+	{
+		int k = m_parser.GetInt(section, "PCFKernelSize", m_shadow.pcfKernelSize);
+		if (k < 3) k = 3;
+		if (k > 7) k = 7;
+		if (k == 4 || k == 6) k = 5;  // 取最近奇数
+		m_shadow.pcfKernelSize = k;
+	}
+	{
+		int sz = m_parser.GetInt(section, "ShadowMapSize", m_shadow.shadowMapSize);
+		if (sz != 512 && sz != 1024 && sz != 2048) sz = 1024;
+		m_shadow.shadowMapSize = sz;
+	}
+	{
+		float lam = m_parser.GetFloat(section, "SplitLambda", m_shadow.splitLambda);
+		if (lam < 0.0f) lam = 0.0f;
+		if (lam > 1.0f) lam = 1.0f;
+		m_shadow.splitLambda = lam;
 	}
 }
 
@@ -180,6 +245,12 @@ bool ConfigManager::Load()
 	ApplySection("Render");
 	ApplySection("Log");
 	ApplySection("Debug");
+	// Phase 9.2: SMAA section（与 Render/Log/Debug 同一 ApplySection 风格，无关 key 走 fallback）
+	ApplySection("SMAA");
+	// Phase 9.3.12: Renderer section（ExecuteBuffer hook 开关）
+	ApplySection("Renderer");
+	// Phase 9.4: Shadow section（Cascaded Shadow Map + PCF 配置）
+	ApplySection("Shadow");
 
 	// 2) 扫 [Game.*]，匹配当前 exe 名（Phase 3.5）
 	char exeBuf[MAX_PATH] = { 0 };

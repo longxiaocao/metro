@@ -9,3 +9,60 @@ D3DParseUnknownCommand=FakeParseUnknown
 DDInternalLock=FakeInternalLock
 DDInternalUnlock=FakeInternalUnlock
 ReleaseDDThreadLock=FakeReleaseLock
+
+; ============================================================
+; Phase 9.7: AutoHotkey 脚本 API (16 个 C-linkage __stdcall 函数)
+; ============================================================
+; AHK v1 DllCall 默认 stdcall, x86 下 stdcall 函数名会被 name-decorate
+;   (_Ddfix_Func@N, N=参数字节数). 显式导出无装饰名, AHK 端直接
+;   DllCall("ddfix.dll\Ddfix_Func", ...) 即可, 无需关心 calling convention.
+; x64 下 stdcall 与 cdecl 等价 (走 Microsoft x64 calling convention),
+;   无 name-decorate, 这里同样写无装饰名 (兼容性最佳).
+;
+; AHK 端调用样例:
+;   DllCall("ddfix.dll\Ddfix_SetRenderEnabled", "Int", 1)
+;   DllCall("ddfix.dll\Ddfix_SetAmbientColor", "Float", 0.1, "Float", 0.2, "Float", 0.3)
+;   ptr := DllCall("ddfix.dll\Ddfix_GetCurrentRenderConfig", "CDecl")
+
+; --- 渲染管线 ---
+Ddfix_SetRenderEnabled
+Ddfix_IsRenderEnabled
+Ddfix_ChangeRenderConfig
+Ddfix_GetCurrentRenderConfig
+
+; --- 环境/雾 ---
+Ddfix_SetAmbientColor
+Ddfix_GetAmbientColor
+Ddfix_SetFogDistance
+Ddfix_GetFogDistance
+Ddfix_SetFogHeight
+Ddfix_GetFogHeight
+Ddfix_SetFogColor
+Ddfix_GetFogColor
+
+; --- 光源控制 ---
+Ddfix_SelectLight
+Ddfix_GetSelectedLight
+Ddfix_SetLightEnabled
+Ddfix_IsLightEnabled
+Ddfix_SetLightPosition
+Ddfix_GetLightPosition
+Ddfix_SetLightRotationArc
+Ddfix_GetLightRotationArc
+Ddfix_SetLightColor
+Ddfix_GetLightColor
+Ddfix_SetLightBrightness
+Ddfix_GetLightBrightness
+Ddfix_SetLightShadowStrength
+Ddfix_GetLightShadowStrength
+
+; --- UI ---
+Ddfix_SetArenaUIVisible
+Ddfix_IsArenaUIVisible
+
+; --- 数学 ---
+Ddfix_WorldToScreenPoint
+
+; --- 回调 ---
+Ddfix_SetCharacterHitCallback
+Ddfix_GetCharacterHitCallback

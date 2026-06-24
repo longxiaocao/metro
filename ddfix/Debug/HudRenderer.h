@@ -1,4 +1,4 @@
-// Phase 4.2: 自绘 HUD 渲染器
+﻿// Phase 4.2: 自绘 HUD 渲染器
 // 设计目标：
 //   - 完全离线可用：不依赖 ImGui 等第三方头
 //   - 用 ID3DXFont 画文本（D3DXCreateFont 来自 ExtraDxSDK）

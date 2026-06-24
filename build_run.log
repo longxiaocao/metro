@@ -1,0 +1,45 @@
+=== Activating MSVC vcvars32 ===
+Set 209 env vars from vcvars32
+=== Toolchain check ===
+cl:    D:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\HostX86\x86\cl.exe
+cmake: D:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+fxc:   D:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\fxc.exe
+=== CMake configure ===
+Reusing existing build dir
+Configure exit: 0
+=== Build ddfix.dll (Release/Win32) ===
+Build ddfix exit: 1
+--- build_ddfix.log error lines ---
+--- tail 30 ---
+适用于 .NET Framework MSBuild 版本 18.7.8+1ac568fee
+
+  Compiling Deferred.hlsl (PS) via fxc.exe
+D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\ddfix\shaders\Deferred.hlsl(1,1): error X3000: Illegal character in shader file [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileDeferredPSHLSLC.vcxproj]
+  
+  compilation failed; no code produced
+D:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: “D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\f3ab62f3c1d4701256198fc5828337fb\DeferredPSHLSLC.h.rule;D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\c8b96ddddc75ae7b0cdc6d8719ee8e79\CompileDeferredPSHLSLC.rule”的自定义生成已退出，代码为 1。 [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileDeferredPSHLSLC.vcxproj]
+D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\ddfix\shaders\GBuffer.hlsl(1,1): error X3000: Illegal character in shader file [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileGBufferVSHLSLC.vcxproj]
+  
+  compilation failed; no code produced
+  Compiling GBuffer.hlsl (VS) via fxc.exe
+D:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: “D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\f3ab62f3c1d4701256198fc5828337fb\GBufferVSHLSLC.h.rule;D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\c8b96ddddc75ae7b0cdc6d8719ee8e79\CompileGBufferVSHLSLC.rule”的自定义生成已退出，代码为 1。 [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileGBufferVSHLSLC.vcxproj]
+D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\ddfix\shaders\Shadow.hlsl(1,1): error X3000: Illegal character in shader file [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileShadowVSHLSLC.vcxproj]
+  
+  compilation failed; no code produced
+  Compiling Shadow.hlsl (VS) via fxc.exe (PowerShell wrapper)
+D:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: “D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\f3ab62f3c1d4701256198fc5828337fb\ShadowVSHLSLC.h.rule;D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\c8b96ddddc75ae7b0cdc6d8719ee8e79\CompileShadowVSHLSLC.rule”的自定义生成已退出，代码为 1。 [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileShadowVSHLSLC.vcxproj]
+D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\ddfix\shaders\GBuffer.hlsl(1,1): error X3000: Illegal character in shader file [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileGBufferPSHLSLC.vcxproj]
+  
+  compilation failed; no code produced
+  Compiling GBuffer.hlsl (PS) via fxc.exe (PowerShell wrapper)
+D:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: “D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\f3ab62f3c1d4701256198fc5828337fb\GBufferPSHLSLC.h.rule;D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\c8b96ddddc75ae7b0cdc6d8719ee8e79\CompileGBufferPSHLSLC.rule”的自定义生成已退出，代码为 1。 [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileGBufferPSHLSLC.vcxproj]
+D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\ddfix\shaders\Shadow.hlsl(1,1): error X3000: Illegal character in shader file [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileShadowPSHLSLC.vcxproj]
+  
+  compilation failed; no code produced
+  Compiling Shadow.hlsl (PS) via fxc.exe (PowerShell wrapper)
+D:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: “D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\f3ab62f3c1d4701256198fc5828337fb\ShadowPSHLSLC.h.rule;D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\CMakeFiles\c8b96ddddc75ae7b0cdc6d8719ee8e79\CompileShadowPSHLSLC.rule”的自定义生成已退出，代码为 1。 [D:\Program Files (x86)\desktop\metro\MeteorBladeEnhancer\build\ddfix\CompileShadowPSHLSLC.vcxproj]
+__Safe-Rm-Invoke-PowerShell: 
+Line |
+  15 |  … eEnhancer"; powershell -NoProfile -ExecutionPolicy Bypass -File build …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | PowerShell.exe execution failed with exit code: 1
